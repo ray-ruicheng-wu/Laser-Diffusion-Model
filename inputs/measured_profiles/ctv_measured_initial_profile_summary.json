@@ -1,0 +1,12 @@
+{
+  "ecv_csv": "C:\\Users\\User\\Desktop\\Codex\\Diffusion Simulation\\inputs\\raw_measurements\\CTV-ECV-RAW.csv",
+  "sims_xlsx": "C:\\Users\\User\\Desktop\\Codex\\Diffusion Simulation\\inputs\\raw_measurements\\CTV-SIMS-RAW.xlsx",
+  "sims_location": "CTV",
+  "output_csv": "C:\\Users\\User\\Desktop\\Codex\\Diffusion Simulation\\inputs\\measured_profiles\\ctv_measured_initial_profile.csv",
+  "output_plot": "C:\\Users\\User\\Desktop\\Codex\\Diffusion Simulation\\inputs\\measured_profiles\\ctv_measured_initial_profile.png",
+  "n_points": 315,
+  "surface_total_p_cm3": 4.5913166904198945e+21,
+  "surface_active_p_cm3": 7.30466777182582e+20,
+  "surface_inactive_p_cm3": 3.8608499132373124e+21,
+  "max_depth_nm": 1353.64562988281
+}
