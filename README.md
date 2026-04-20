@@ -37,6 +37,10 @@ Documentation lives in:
 - `docs/project_model_walkthrough_zh.md`
 - `docs/project_model_walkthrough_en.md`
 - `docs/current-model-summary.md`
+- `docs/physics_user_quickstart_zh.md`
+- `docs/physics_user_quickstart_en.md`
+- `docs/physics_parameter_manual_zh.md`
+- `docs/physics_parameter_manual_en.md`
 - `docs/workspace-file-classification.md`
 - `docs/phase1-code-explained.md`
 - `docs/phase1-analysis.md`
