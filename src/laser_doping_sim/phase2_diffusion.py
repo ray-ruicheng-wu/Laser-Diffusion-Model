@@ -55,6 +55,10 @@ class DiffusionResult:
     source_cell_concentration_cm3: np.ndarray
     surface_injection_flux_atoms_m2_s: np.ndarray
     diffusion_parameters: DiffusionParameters
+    initial_injected_p_cm3: np.ndarray | None = None
+    final_active_origin_p_cm3: np.ndarray | None = None
+    final_inactive_origin_p_cm3: np.ndarray | None = None
+    final_injected_origin_p_cm3: np.ndarray | None = None
 
 
 def liquid_phosphorus_diffusivity_m2_s(
@@ -216,6 +220,34 @@ def _initial_inactive_surface_profile_m3(
     return profile
 
 
+def _default_initial_source_inventory_atoms_m2(
+    source_concentration_cm3: float,
+    params: DiffusionParameters,
+) -> float:
+    return (
+        source_concentration_cm3
+        * CM3_TO_M3
+        * params.source_effective_thickness_m
+        * params.texture_interface_area_factor
+    )
+
+
+def _coerce_initial_profile_m3(
+    profile_cm3: np.ndarray | None,
+    depth_m: np.ndarray,
+    label: str,
+) -> np.ndarray | None:
+    if profile_cm3 is None:
+        return None
+    values = np.asarray(profile_cm3, dtype=float)
+    if values.shape != depth_m.shape:
+        raise ValueError(
+            f"{label} must have the same shape as thermal.depth. "
+            f"Expected {depth_m.shape}, got {values.shape}."
+        )
+    return np.clip(values, 0.0, MAX_CONCENTRATION_CM3) * CM3_TO_M3
+
+
 def _assemble_diffusion_matrix(
     diffusivity: np.ndarray,
     dt: float,
@@ -280,9 +312,13 @@ def junction_depth_m(
     return float(z0 + fraction * (z1 - z0))
 
 
-def run_diffusion(
+def run_diffusion_with_state(
     thermal: SimulationResult,
     params: DiffusionParameters | None = None,
+    initial_active_p_cm3: np.ndarray | None = None,
+    initial_inactive_p_cm3: np.ndarray | None = None,
+    initial_injected_p_cm3: np.ndarray | None = None,
+    initial_source_inventory_atoms_m2: float | None = None,
 ) -> DiffusionResult:
     if params is None:
         params = DiffusionParameters()
@@ -299,17 +335,28 @@ def run_diffusion(
     surface_injection_flux_atoms_m2_s = np.zeros(time.size)
 
     source_concentration_cm3 = thermal.surface_source.dopant_concentration_cm3
-    initial_inventory = (
-        source_concentration_cm3
-        * CM3_TO_M3
-        * params.source_effective_thickness_m
-        * params.texture_interface_area_factor
-    )
-
     background_m3 = thermal.substrate_doping.concentration_cm3 * CM3_TO_M3
-    initial_active_profile = _initial_active_profile_m3(depth, background_m3, params)
-    initial_inactive_profile = _initial_inactive_surface_profile_m3(depth, params)
-    initial_profile = _initial_total_profile_m3(depth, background_m3, params)
+    derived_initial_active_profile = _initial_active_profile_m3(depth, background_m3, params)
+    derived_initial_inactive_profile = _initial_inactive_surface_profile_m3(depth, params)
+    derived_initial_injected_profile = np.zeros_like(depth)
+    initial_active_profile = _coerce_initial_profile_m3(initial_active_p_cm3, depth, "initial_active_p_cm3")
+    if initial_active_profile is None:
+        initial_active_profile = derived_initial_active_profile
+    initial_inactive_profile = _coerce_initial_profile_m3(initial_inactive_p_cm3, depth, "initial_inactive_p_cm3")
+    if initial_inactive_profile is None:
+        initial_inactive_profile = derived_initial_inactive_profile
+    initial_injected_profile = _coerce_initial_profile_m3(initial_injected_p_cm3, depth, "initial_injected_p_cm3")
+    if initial_injected_profile is None:
+        initial_injected_profile = derived_initial_injected_profile
+    initial_profile = np.clip(
+        initial_active_profile + initial_inactive_profile + initial_injected_profile,
+        0.0,
+        MAX_CONCENTRATION_CM3 * CM3_TO_M3,
+    )
+    if initial_source_inventory_atoms_m2 is None:
+        initial_inventory = _default_initial_source_inventory_atoms_m2(source_concentration_cm3, params)
+    else:
+        initial_inventory = float(max(0.0, initial_source_inventory_atoms_m2))
     initial_silicon_inventory = float(np.trapezoid(initial_profile, depth))
     total_inventory = initial_inventory + initial_silicon_inventory
     concentration_m3[0] = initial_profile
@@ -331,9 +378,12 @@ def run_diffusion(
         raise ValueError("initial_profile_csv must be provided when initial_profile_kind='measured'.")
 
     previous_silicon_inventory_atoms_m2 = initial_silicon_inventory
+    active_component_m3 = initial_active_profile.copy()
+    inactive_component_m3 = initial_inactive_profile.copy()
+    injected_component_m3 = initial_injected_profile.copy()
 
     for step in range(1, time.size):
-        previous = concentration_m3[step - 1].copy()
+        previous = active_component_m3 + inactive_component_m3 + injected_component_m3
         diffusivity = effective_diffusivity_m2_s(
             thermal.temperature[step],
             thermal.liquid_fraction[step],
@@ -364,10 +414,16 @@ def run_diffusion(
             dz=dz,
             surface_exchange_velocity_m_s=surface_exchange_velocity_m_s,
         )
+        zero_exchange_matrix = _assemble_diffusion_matrix(
+            diffusivity=diffusivity,
+            dt=dt,
+            dz=dz,
+            surface_exchange_velocity_m_s=0.0,
+        )
 
-        rhs = previous.copy()
+        total_rhs = previous.copy()
         if surface_exchange_velocity_m_s > 0.0:
-            rhs[0] += (
+            total_rhs[0] += (
                 2.0
                 * dt
                 * surface_exchange_velocity_m_s
@@ -375,8 +431,13 @@ def run_diffusion(
                 / dz
             )
 
-        updated = spsolve(matrix, rhs)
+        updated = spsolve(matrix, total_rhs)
         updated = np.clip(updated, 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
+
+        updated_active_component = spsolve(zero_exchange_matrix, active_component_m3.copy())
+        updated_active_component = np.clip(updated_active_component, 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
+        updated_inactive_component = spsolve(zero_exchange_matrix, inactive_component_m3.copy())
+        updated_inactive_component = np.clip(updated_inactive_component, 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
 
         silicon_inventory_atoms_m2 = float(np.trapezoid(updated, depth))
         max_step_inventory_atoms_m2 = previous_silicon_inventory_atoms_m2 + inventory[step - 1]
@@ -384,6 +445,18 @@ def run_diffusion(
             scale = max_step_inventory_atoms_m2 / silicon_inventory_atoms_m2
             updated *= scale
             silicon_inventory_atoms_m2 = max_step_inventory_atoms_m2
+
+        updated_injected_component = np.clip(
+            updated - updated_active_component - updated_inactive_component,
+            0.0,
+            MAX_CONCENTRATION_CM3 * CM3_TO_M3,
+        )
+        updated = (
+            updated_active_component
+            + updated_inactive_component
+            + updated_injected_component
+        )
+        silicon_inventory_atoms_m2 = float(np.trapezoid(updated, depth))
 
         silicon_gain_atoms_m2 = max(0.0, silicon_inventory_atoms_m2 - previous_silicon_inventory_atoms_m2)
         inventory[step] = max(0.0, inventory[step - 1] - silicon_gain_atoms_m2)
@@ -395,6 +468,9 @@ def run_diffusion(
         concentration_m3[step] = updated
         junction_depth[step] = junction_depth_m(updated, background_m3, depth)
         previous_silicon_inventory_atoms_m2 = silicon_inventory_atoms_m2
+        active_component_m3 = updated_active_component
+        inactive_component_m3 = updated_inactive_component
+        injected_component_m3 = updated_injected_component
 
     return DiffusionResult(
         thermal=thermal,
@@ -406,6 +482,20 @@ def run_diffusion(
         source_cell_concentration_cm3=source_cell_concentration_cm3,
         surface_injection_flux_atoms_m2_s=surface_injection_flux_atoms_m2_s,
         diffusion_parameters=params,
+        initial_injected_p_cm3=initial_injected_profile / CM3_TO_M3,
+        final_active_origin_p_cm3=active_component_m3 / CM3_TO_M3,
+        final_inactive_origin_p_cm3=inactive_component_m3 / CM3_TO_M3,
+        final_injected_origin_p_cm3=injected_component_m3 / CM3_TO_M3,
+    )
+
+
+def run_diffusion(
+    thermal: SimulationResult,
+    params: DiffusionParameters | None = None,
+) -> DiffusionResult:
+    return run_diffusion_with_state(
+        thermal=thermal,
+        params=params,
     )
 
 
@@ -415,6 +505,26 @@ def _summary(result: DiffusionResult) -> dict:
     background_cm3 = float(result.thermal.substrate_doping.concentration_cm3)
     initial_active_profile = result.initial_active_p_cm3
     initial_inactive_profile = result.initial_inactive_p_cm3
+    initial_injected_profile = (
+        result.initial_injected_p_cm3
+        if result.initial_injected_p_cm3 is not None
+        else np.zeros_like(final_profile)
+    )
+    final_active_origin_profile = (
+        result.final_active_origin_p_cm3
+        if result.final_active_origin_p_cm3 is not None
+        else np.zeros_like(final_profile)
+    )
+    final_inactive_origin_profile = (
+        result.final_inactive_origin_p_cm3
+        if result.final_inactive_origin_p_cm3 is not None
+        else np.zeros_like(final_profile)
+    )
+    final_injected_origin_profile = (
+        result.final_injected_origin_p_cm3
+        if result.final_injected_origin_p_cm3 is not None
+        else np.zeros_like(final_profile)
+    )
     depth_cm = result.thermal.depth * 1.0e2
     initial_active_donor_profile = np.maximum(initial_active_profile - background_cm3, 0.0)
     final_net_donor_profile = np.maximum(final_profile - background_cm3, 0.0)
@@ -422,8 +532,12 @@ def _summary(result: DiffusionResult) -> dict:
     _, aligned_final_profile = _surface_aligned_profile(depth_cm, final_profile)
     _, aligned_initial_active_profile = _surface_aligned_profile(depth_cm, initial_active_profile)
     _, aligned_initial_inactive_profile = _surface_aligned_profile(depth_cm, initial_inactive_profile)
+    _, aligned_initial_injected_profile = _surface_aligned_profile(depth_cm, initial_injected_profile)
     _, aligned_initial_active_donor_profile = _surface_aligned_profile(depth_cm, initial_active_donor_profile)
     _, aligned_final_net_donor_profile = _surface_aligned_profile(depth_cm, final_net_donor_profile)
+    _, aligned_final_active_origin_profile = _surface_aligned_profile(depth_cm, final_active_origin_profile)
+    _, aligned_final_inactive_origin_profile = _surface_aligned_profile(depth_cm, final_inactive_origin_profile)
+    _, aligned_final_injected_origin_profile = _surface_aligned_profile(depth_cm, final_injected_origin_profile)
     initial_silicon_inventory_atoms_m2 = float(np.trapezoid(initial_profile * CM3_TO_M3, result.thermal.depth))
     silicon_inventory_atoms_m2 = float(np.trapezoid(final_profile * CM3_TO_M3, result.thermal.depth))
     initial_source_inventory_atoms_m2 = float(result.source_inventory_atoms_m2[0])
@@ -469,8 +583,12 @@ def _summary(result: DiffusionResult) -> dict:
         "final_sheet_dose_cm2": float(np.trapezoid(aligned_final_profile, aligned_depth_cm)),
         "initial_active_sheet_dose_cm2": float(np.trapezoid(aligned_initial_active_profile, aligned_depth_cm)),
         "initial_inactive_sheet_dose_cm2": float(np.trapezoid(aligned_initial_inactive_profile, aligned_depth_cm)),
+        "initial_injected_sheet_dose_cm2": float(np.trapezoid(aligned_initial_injected_profile, aligned_depth_cm)),
         "initial_net_donor_sheet_dose_cm2": float(np.trapezoid(aligned_initial_active_donor_profile, aligned_depth_cm)),
         "final_net_donor_sheet_dose_cm2": float(np.trapezoid(aligned_final_net_donor_profile, aligned_depth_cm)),
+        "final_active_origin_sheet_dose_cm2": float(np.trapezoid(aligned_final_active_origin_profile, aligned_depth_cm)),
+        "final_inactive_origin_sheet_dose_cm2": float(np.trapezoid(aligned_final_inactive_origin_profile, aligned_depth_cm)),
+        "final_injected_origin_sheet_dose_cm2": float(np.trapezoid(aligned_final_injected_origin_profile, aligned_depth_cm)),
         "final_mass_balance_error_atoms_m2": (
             initial_source_inventory_atoms_m2
             + initial_silicon_inventory_atoms_m2
@@ -492,6 +610,10 @@ def save_outputs(result: DiffusionResult, output_dir: str | Path) -> Path:
         concentration_p_cm3=result.concentration_p_cm3,
         initial_active_p_cm3=result.initial_active_p_cm3,
         initial_inactive_p_cm3=result.initial_inactive_p_cm3,
+        initial_injected_p_cm3=result.initial_injected_p_cm3,
+        final_active_origin_p_cm3=result.final_active_origin_p_cm3,
+        final_inactive_origin_p_cm3=result.final_inactive_origin_p_cm3,
+        final_injected_origin_p_cm3=result.final_injected_origin_p_cm3,
         junction_depth_m=result.junction_depth_m,
         source_inventory_atoms_m2=result.source_inventory_atoms_m2,
         source_cell_concentration_cm3=result.source_cell_concentration_cm3,

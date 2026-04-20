@@ -1433,3 +1433,183 @@ Phase 3 第一轮已经完成，新增：
 - 后续仍应考虑：
   - 更物理的界面模型
   - 初始 inactive 再激活与 injected P 电活化的进一步分离
+### 2026-04-20: Single-cycle 2000 ns cooling check for multi-shot planning
+
+What we added:
+
+- Added `run_single_cycle_cooling_check.py`
+- Purpose: extend the existing single-pulse PSG/Si thermal solve out to one full pulse period so we can estimate residual heating before the next pulse
+
+Key setup:
+
+- Laser repetition rate kept at `500 kHz`
+- One physical pulse period is therefore `2000 ns`
+- Scout run directory:
+  - `outputs/phase3/single_cycle_cooling_check_30_60_90w_period2000ns`
+- Fine-step confirmation directory:
+  - `outputs/phase3/single_cycle_cooling_check_60w_dt005_period2000ns`
+
+Scout observations (`dt = 0.2 ns`, `30/60/90 W`):
+
+- `30 W`:
+  - `peak Si surface T ≈ 1363.85 K`
+  - no melt
+  - `T_si(400 ns) ≈ 571.41 K`
+  - `T_si(2000 ns) ≈ 310.21 K`
+  - cycle-end Si residual above ambient `≈ 10.21 K`
+- `60 W`:
+  - scout run showed melt and a cycle-end Si residual `≈ 24.99 K`
+- `90 W`:
+  - `peak Si surface T ≈ 2687.53 K`
+  - `melt end ≈ 293 ns`
+  - `T_si(2000 ns) ≈ 336.06 K`
+  - cycle-end Si residual above ambient `≈ 36.06 K`
+
+Fine-step confirmation (`60 W`, `dt = 0.05 ns`):
+
+- `peak Si surface T ≈ 1679.06 K`
+- no melt
+- `T_si(400 ns) ≈ 767.80 K`
+- `T_si(2000 ns) ≈ 317.59 K`
+- cycle-end Si residual above ambient `≈ 17.59 K`
+
+Interpretation:
+
+- Extending one pulse to the full `2000 ns` cycle does not materially change the early-time pulse physics, but it does show the cooling tail that the current `400 ns` cases truncate
+- For the current 1D stack model, the residual surface heating by the next pulse is only on the order of `10-40 K` across the scout range, and about `18 K` for the fine-step `60 W` confirmation
+- This supports using a first multi-shot model that neglects explicit thermal accumulation between pulses and instead carries forward:
+  - redistributed chemical P profile
+  - explicit injected-P pool
+  - remaining source inventory
+
+Caution:
+
+- The scout `dt = 0.2 ns` run over-predicts `60 W` melting relative to the fine-step `dt = 0.05 ns` confirmation
+- For threshold-sensitive multi-shot work, retain fine time stepping near the `54-60 W` region
+
+Next modeling decision:
+
+- Multi-shot V1 should be implemented as:
+  - no explicit interpulse thermal accumulation
+  - pulse-to-pulse inheritance of chemical state and source inventory
+- Multi-shot V2 should only be added if later data shows stronger shot-count dependence than this V1 can explain
+
+### 2026-04-20: Phase 4 multi-shot V1 landed
+
+What we added:
+
+- `src/laser_doping_sim/phase4_multishot.py`
+- `run_phase4_multishot.py`
+- `docs/phase4-multishot-v1-summary.md`
+
+Supporting kernel upgrade:
+
+- `src/laser_doping_sim/phase2_diffusion.py` can now accept an inherited chemical/source state:
+  - `initial_active_p_cm3`
+  - `initial_inactive_p_cm3`
+  - `initial_injected_p_cm3`
+  - `initial_source_inventory_atoms_m2`
+
+Core Phase 4 V1 assumption:
+
+- reuse the same single-pulse thermal history each shot
+- do not yet carry interpulse temperature from one pulse to the next
+- do carry forward:
+  - active-origin P
+  - inactive-origin P
+  - injected-origin P
+  - remaining PSG source inventory
+
+Current bookkeeping choice:
+
+- total P is still solved with the existing finite-source boundary closure
+- active-origin and inactive-origin pools diffuse with zero external surface flux
+- injected-origin P is reconstructed as:
+  - `C_inj = C_total - C_active_origin - C_inactive_origin`
+
+Why this matters:
+
+- it preserves the existing single-pulse total solution
+- it avoids the earlier bug where the Robin sink term artificially moved pre-existing silicon phosphorus into the injected-origin pool
+
+Validation run:
+
+- `outputs/phase4/multishot_v1_smoke_60w_3shots_balanced`
+
+Current validation results:
+
+- component sheet-dose balance closes to numerical precision
+- injected-origin sheet dose matches source depletion to numerical precision
+- `60 W, 3 shots` smoke test gives:
+  - Shot 1 cumulative injected dose `~1.08e14 cm^-2`
+  - Shot 2 cumulative injected dose `~2.86e14 cm^-2`
+  - Shot 3 cumulative injected dose `~4.86e14 cm^-2`
+  - Shot 3 final junction depth `~382.8 nm`
+
+Current conclusion:
+
+- the first usable multi-shot model is now in place
+- the next most important missing layer is no longer pulse-to-pulse chemistry inheritance
+- it is now the electrical/activation side:
+  - whether `eta_inactive` and `eta_inj` should depend on `shot_count`
+  - or on cumulative injected dose / cumulative melt proxy instead of just laser power
+
+### 2026-04-20: New multi-shot activation table path added without touching old tables
+
+What we added:
+
+- `src/laser_doping_sim/activation_models.py`
+  - new `PiecewiseMultiShotDualChannelActivationModel`
+- `run_build_multishot_activation_bootstrap.py`
+- `run_phase4_multishot_sheet_resistance.py`
+
+New table design:
+
+- keep the old single-shot activation tables unchanged
+- create a new Phase 4 parameter table with columns:
+  - `power_w`
+  - `eta_inactive_shot1`
+  - `eta_inactive_inf`
+  - `n0_inactive_shots`
+  - `eta_injected_shot1`
+  - `eta_injected_inf`
+  - `qref_injected_cm2`
+  - `q0_injected_cm2`
+
+Current bootstrap table:
+
+- `outputs/phase4/multishot_activation_bootstrap_trial/multishot_dual_channel_params.csv`
+
+How it is defined:
+
+- `shot1` activation values are inherited directly from the existing single-shot table
+- inactive-channel multi-shot growth is modeled as a saturating function of shot count
+- injected-channel multi-shot growth is modeled as a saturating function of cumulative injected dose above the shot-1 reference dose
+
+Current trial application:
+
+- phase4 chemistry input:
+  - `outputs/phase4/multishot_v1_smoke_60w_3shots_balanced`
+- electrical post-processing output:
+  - `outputs/phase4/multishot_v1_smoke_60w_3shots_balanced/multishot_rsh_bootstrap_trial`
+
+Current `60 W`, `3-shot` bootstrap trial:
+
+- `Rsh init ≈ 169.89 ohm/sq`
+- Shot 1:
+  - `eta_inactive ≈ 0.8684`
+  - `eta_injected ≈ 7.75e-05`
+  - `Rsh ≈ 69.00 ohm/sq`
+- Shot 2:
+  - `eta_inactive ≈ 0.8759`
+  - `eta_injected ≈ 0.1252`
+  - `Rsh ≈ 61.52 ohm/sq`
+- Shot 3:
+  - `eta_inactive ≈ 0.8812`
+  - `eta_injected ≈ 0.1846`
+  - `Rsh ≈ 55.94 ohm/sq`
+
+Current conclusion:
+
+- the new activation path is now separable from the old one
+- we can continue testing multi-shot activation behavior without breaking the existing single-shot calibration chain

@@ -8,7 +8,8 @@ from .phase1_thermal import (
     run_simulation,
     save_outputs,
 )
-from .phase2_diffusion import DiffusionParameters, DiffusionResult, run_diffusion
+from .phase2_diffusion import DiffusionParameters, DiffusionResult, run_diffusion, run_diffusion_with_state
+from .phase4_multishot import MultiShotParameters, MultiShotResult, run_multishot_diffusion
 from .sheet_resistance import sheet_resistance_ohm_per_sq
 
 __all__ = [
@@ -17,11 +18,15 @@ __all__ = [
     "DiffusionResult",
     "LaserPulse",
     "MaterialProperties",
+    "MultiShotParameters",
+    "MultiShotResult",
     "SimulationResult",
     "SubstrateDoping",
     "SurfaceSourceLayer",
     "sheet_resistance_ohm_per_sq",
     "run_diffusion",
+    "run_diffusion_with_state",
+    "run_multishot_diffusion",
     "run_simulation",
     "save_outputs",
 ]
