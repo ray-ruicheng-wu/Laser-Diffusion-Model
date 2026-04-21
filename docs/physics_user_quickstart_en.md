@@ -60,6 +60,12 @@ pip install -r requirements.txt
   - Power-scan entry point
 - [run_sheet_resistance_cases.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_sheet_resistance_cases.py)
   - `Rsh` post-processing entry point
+- [run_phase4_multishot.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot.py)
+  - Multi-shot chemistry and thermal-history entry point
+- [run_build_multishot_activation_bootstrap.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_build_multishot_activation_bootstrap.py)
+  - Multi-shot activation bootstrap-table builder
+- [run_phase4_multishot_sheet_resistance.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot_sheet_resistance.py)
+  - Multi-shot `Rsh` post-processing entry point
 
 ## 3. Recommended full test sequence
 
@@ -70,6 +76,7 @@ If this is your first time using the project, the recommended order is:
 3. Run `Phase 3` for the main `PSG/Si` workflow
 4. Run a power scan if you want trends across laser power
 5. Run `Rsh` post-processing if you want comparison against sheet-resistance measurements
+6. Run `Phase 4` if you want shot-to-shot inheritance or pulse-train studies
 
 The rest of this document follows that order.
 
@@ -315,7 +322,67 @@ From the `Rsh` output:
 - `Rsh af`
 - Whether the active / inactive / injected split looks physically reasonable
 
-## 11. Common parameter directions
+## 11. Optional extension: run a Phase 4 multi-shot case
+
+If you want to extend the same workflow into repeated-pulse accumulation, a good first case is:
+
+```powershell
+python .\run_phase4_multishot.py `
+  --output-dir outputs/phase4/tutorial_multishot_case `
+  --average-power-w 60 `
+  --shots 10 `
+  --thermal-history-mode accumulate `
+  --cycle-end-ns 2000 `
+  --dt-ns 0.05 `
+  --nz 300 `
+  --profile-shots 1 2 5 10 `
+  --fast-output
+```
+
+Use:
+
+- `reuse_single_pulse` for faster chemistry-only multi-shot studies
+- `accumulate` when shot-to-shot thermal carry-over matters
+- `--fast-output` for long runs when you mainly want `csv/json/npz`
+
+Key outputs to read first:
+
+- `multishot/multishot_summary.csv`
+- `multishot/summary.json`
+- root `summary.json`
+
+Important quantities:
+
+- `shot_injected_dose_cm2`
+- `cumulative_injected_dose_cm2`
+- `final_junction_depth_nm`
+- `remaining_source_inventory_atoms_m2`
+- `peak_silicon_surface_temperature_k`
+- `cycle_end_silicon_surface_temperature_k`
+
+## 12. Optional extension: run multi-shot `Rsh` post-processing
+
+If you already have a multi-shot activation parameter CSV, run:
+
+```powershell
+python .\run_phase4_multishot_sheet_resistance.py `
+  --phase4-dir outputs/phase4/tutorial_multishot_case `
+  --activation-parameter-csv outputs/phase4/multishot_activation_bootstrap_scan_60w_1to10/multishot_dual_channel_params.csv `
+  --output-dir outputs/phase4/tutorial_multishot_case/multishot_rsh
+```
+
+Read first:
+
+- `multishot_sheet_resistance_summary.csv`
+- `expanded_multishot_activation_table.csv`
+
+Focus on:
+
+- `eta_inactive`
+- `eta_injected`
+- `rsh_after_ohm_per_sq`
+- whether `Rsh` and activation evolve monotonically with shot count
+## 13. Common parameter directions
 
 If the model never melts, check first:
 
@@ -340,7 +407,7 @@ If total phosphorus is high but `Rsh` does not decrease, check first:
 - `injected_activation_fraction`
 - The measured-profile active / inactive split
 
-## 12. Common mistakes for new users
+## 14. Common mistakes for new users
 
 1. Using the old single-layer `Phase 1` absorption parameters as if they were the formal `Phase 3 PSG/Si` optical parameters
 2. Confusing total phosphorus with electrically active donor concentration
@@ -348,7 +415,7 @@ If total phosphorus is high but `Rsh` does not decrease, check first:
 4. Interpreting `Rsh` post-processing parameters as if the main diffusion PDE already solved electrical activation explicitly
 5. Judging a run from plots alone before reading `summary.json`
 
-## 13. What to read next
+## 15. What to read next
 
 If you can already run the workflow, the next document to read is:
 

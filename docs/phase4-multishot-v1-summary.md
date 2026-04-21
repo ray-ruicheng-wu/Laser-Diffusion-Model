@@ -12,6 +12,12 @@ Its purpose is not to solve the full pulse-train thermal problem yet. Instead, i
 
 This matches the recent single-cycle cooling check, which showed that at `500 kHz` the modeled `2000 ns` cycle-end residual heating is only on the order of `10-40 K` for the scout range, and about `18 K` for the fine-step `60 W` confirmation.
 
+Current documentation positioning:
+
+- read this file for the chemistry-inheritance-only multi-shot path
+- read `phase4-thermal-history-v2-summary.md` for the shot-to-shot thermal-memory path
+- for long benchmark or calibration scans, `run_phase4_multishot.py --fast-output` is now the preferred output mode
+
 ## Main Assumptions
 
 Phase 4 V1 keeps these assumptions:
@@ -35,6 +41,12 @@ New main files:
 Supporting extension:
 
 - `src/laser_doping_sim/phase2_diffusion.py`
+
+Operational note:
+
+- `run_phase4_multishot.py` now also supports `--fast-output`
+- this does not change the modeled chemistry
+- it only skips plot generation and uses faster `npz` writing for long runs
 
 The key Phase 2 upgrade is that the diffusion kernel can now accept an inherited state:
 
@@ -137,6 +149,11 @@ V1 is not yet a full pulse-train model because it does not include:
 - temperature-dependent activation history across multiple pulses
 - pulse-to-pulse optical changes
 - moving-interface segregation / trapping during repeated remelting
+
+So the current interpretation is:
+
+- use V1 when the main question is chemistry inheritance and source depletion
+- use the Phase 4 thermal-history V2 path when explicit pulse-to-pulse heat carry-over matters
 
 ## Recommended Next Step
 

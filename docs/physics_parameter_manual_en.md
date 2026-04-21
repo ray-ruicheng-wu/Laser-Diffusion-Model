@@ -1048,7 +1048,64 @@ Main parameters:
 
 These scripts are not used to change the thermal or diffusion PDEs. They are used to calibrate how high-power electrical activation should be interpreted.
 
-### 15.4 `run_phase3_physics_validation.py`
+### 15.4 `run_phase4_multishot.py`
+
+This script is the main multi-shot chemistry / thermal-history driver.
+
+Main parameters:
+
+- `--average-power-w`
+  - Average laser power
+  - Sets the per-pulse fluence through repetition rate and spot area
+- `--shots`
+  - Number of pulses in the train
+  - Increasing it strengthens cumulative chemistry and thermal-history effects
+- `--thermal-history-mode`
+  - `reuse_single_pulse`: reuse one single-pulse thermal history every shot
+  - `accumulate`: carry the cycle-end temperature profile into the next shot
+- `--cycle-end-ns`
+  - End time of each shot cycle in `accumulate` mode
+  - Increasing it lets more cooling happen before the next shot
+- `--source-replenishment-mode`
+  - Controls whether the local source inventory is carried or reset between shots
+- `--profile-shots`
+  - Which shot indices should get detailed saved profiles
+- `--fast-output`
+  - Keeps the core `csv/json/npz` outputs but skips plots
+  - Useful for long benchmark and calibration runs
+- `--nz`
+  - Stack grid count
+  - Higher values improve spatial resolution but increase runtime
+- `--dt-ns`
+  - Thermal time step
+  - Smaller values improve threshold-region fidelity but increase runtime
+
+Most important physical interpretation:
+
+- `thermal-history-mode` changes the pulse-train thermal assumption
+- `shots` changes the accumulated chemistry history
+- `fast-output` changes only output overhead, not the modeled physics
+
+### 15.5 `run_phase4_multishot_sheet_resistance.py`
+
+This script is the multi-shot electrical post-processing driver.
+
+Main parameters:
+
+- `--phase4-dir`
+  - Existing multi-shot chemistry output directory
+- `--activation-parameter-csv`
+  - Multi-shot dual-channel activation parameter table
+- `--output-dir`
+  - Output directory for the post-processed `Rsh` results
+
+Main interpretation:
+
+- this script does not change the chemistry solution
+- it applies the empirical electrical calibration layer shot by shot
+- the key outputs are the activation ratios and `Rsh` trend with shot count
+
+### 15.6 `run_phase3_physics_validation.py`
 
 This script checks whether the power-scan outputs follow basic physical and logical trends.
 
