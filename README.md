@@ -1,6 +1,6 @@
 # Laser Silicon Doping Simulation
 
-This workspace now includes the Phase 1 thermal model and the corrected Phase 2/3 phosphorus diffusion model for laser-induced silicon doping.
+This workspace now includes the Phase 1 thermal model, the corrected Phase 2/3 phosphorus diffusion model, and the Phase 4 multi-shot workflow for laser-induced silicon doping.
 
 ## What is implemented
 
@@ -26,11 +26,24 @@ python .\run_phase2.py
 python .\run_phase3.py
 ```
 
+```powershell
+python .\run_phase4_multishot.py `
+  --output-dir outputs/phase4/example_multishot_run `
+  --average-power-w 60 `
+  --shots 10 `
+  --thermal-history-mode accumulate `
+  --cycle-end-ns 2000 `
+  --dt-ns 0.05 `
+  --nz 300 `
+  --profile-shots 1 2 5 10
+```
+
 Default outputs are written to:
 
 - `outputs/phase1/default_run/`
 - `outputs/phase2/default_run/`
 - `outputs/phase3/default_run/`
+- `outputs/phase4/example_multishot_run/`
 
 Documentation lives in:
 
@@ -48,6 +61,8 @@ Documentation lives in:
 - `docs/phase2-analysis.md`
 - `docs/phase3-code-explained.md`
 - `docs/phase3-analysis.md`
+- `docs/phase4-multishot-v1-summary.md`
+- `docs/phase4-thermal-history-v2-summary.md`
 - `docs/dual-channel-activation-method.md`
 - `docs/formula-reference-register.md`
 - `docs/reproducible-paper-report-90w.md`
@@ -77,6 +92,34 @@ python .\run_phase2.py `
   --source-effective-thickness-nm 100 `
   --interfacial-transport-length-nm 100
 ```
+
+```powershell
+python .\run_phase4_multishot.py `
+  --output-dir outputs/phase4/example_multishot_fast `
+  --average-power-w 60 `
+  --shots 10 `
+  --thermal-history-mode accumulate `
+  --cycle-end-ns 2000 `
+  --dt-ns 0.05 `
+  --nz 300 `
+  --profile-shots 1 10 `
+  --fast-output
+```
+
+## Phase 4 run modes
+
+- `--thermal-history-mode reuse_single_pulse`
+  Reuses one single-pulse thermal history for every shot. This is the faster chemistry-focused approximation.
+- `--thermal-history-mode accumulate`
+  Reruns the stack thermal solve every shot and carries the cycle-end temperature field into the next shot. This is the physically richer but slower mode for pulse-train studies.
+- `--fast-output`
+  Keeps the core `csv/json/npz` outputs but skips figure generation and uses uncompressed `npz` saves to reduce post-processing overhead.
+
+## Recent performance update
+
+- The Phase 3 stack thermal solver and Phase 2 diffusion solver now use LAPACK tridiagonal solves plus vectorized matrix assembly.
+- The integrated Phase 4 thermal-history path is much faster on the current CPU workflow without changing the model equations.
+- The `--fast-output` switch is useful when we want long multi-shot scans for calibration or benchmarking and do not need plots for every run.
 
 ## Current modeling assumptions
 

@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import Boltzmann, e as elementary_charge
 from scipy.integrate import cumulative_trapezoid
-from scipy.sparse import diags
-from scipy.sparse.linalg import spsolve
+from scipy.linalg.lapack import dgtsv
 from scipy.special import erfc, erfcinv
 
 from .measured_profiles import load_measured_initial_profile_csv, interpolate_profile_log_cm3
@@ -248,6 +247,33 @@ def _coerce_initial_profile_m3(
     return np.clip(values, 0.0, MAX_CONCENTRATION_CM3) * CM3_TO_M3
 
 
+def _solve_tridiagonal(
+    lower: np.ndarray,
+    diag: np.ndarray,
+    upper: np.ndarray,
+    rhs: np.ndarray,
+) -> np.ndarray:
+    rhs_matrix = np.asarray(rhs, dtype=float)
+    squeeze = rhs_matrix.ndim == 1
+    if squeeze:
+        rhs_matrix = rhs_matrix[:, None]
+    _, _, _, solution, info = dgtsv(
+        lower,
+        diag,
+        upper,
+        rhs_matrix,
+        overwrite_dl=1,
+        overwrite_d=1,
+        overwrite_du=1,
+        overwrite_b=1,
+    )
+    if info != 0:
+        raise np.linalg.LinAlgError(f"dgtsv failed with info={info}")
+    if squeeze:
+        return solution[:, 0]
+    return solution
+
+
 def _assemble_diffusion_matrix(
     diffusivity: np.ndarray,
     dt: float,
@@ -255,35 +281,23 @@ def _assemble_diffusion_matrix(
     surface_exchange_velocity_m_s: float,
 ) -> tuple:
     n = diffusivity.size
-    interface_d = _harmonic_mean(diffusivity[:-1], diffusivity[1:])
+    coeff = dt * _harmonic_mean(diffusivity[:-1], diffusivity[1:]) / dz**2
 
-    lower = np.zeros(n - 1)
-    diag = np.ones(n)
-    upper = np.zeros(n - 1)
+    lower = np.empty(n - 1, dtype=float)
+    diag = np.empty(n, dtype=float)
+    upper = np.empty(n - 1, dtype=float)
 
-    surface_diffusion = 2.0 * dt * interface_d[0] / dz**2
     surface_exchange = 2.0 * dt * surface_exchange_velocity_m_s / dz
-    diag[0] = 1.0 + surface_diffusion + surface_exchange
-    upper[0] = -surface_diffusion
+    diag[0] = 1.0 + 2.0 * coeff[0] + surface_exchange
+    upper[0] = -2.0 * coeff[0]
+    if n > 2:
+        diag[1:-1] = 1.0 + coeff[:-1] + coeff[1:]
+        lower[:-1] = -coeff[:-1]
+        upper[1:] = -coeff[1:]
+    diag[-1] = 1.0 + 2.0 * coeff[-1]
+    lower[-1] = -2.0 * coeff[-1]
 
-    for idx in range(1, n - 1):
-        west = dt * interface_d[idx - 1] / dz**2
-        east = dt * interface_d[idx] / dz**2
-        diag[idx] = 1.0 + west + east
-        lower[idx - 1] = -west
-        upper[idx] = -east
-
-    coeff_bottom = 2.0 * dt * interface_d[-1] / dz**2
-    diag[-1] = 1.0 + coeff_bottom
-    lower[-1] = -coeff_bottom
-
-    matrix = diags(
-        diagonals=[lower, diag, upper],
-        offsets=[-1, 0, 1],
-        shape=(n, n),
-        format="csc",
-    )
-    return matrix
+    return lower, diag, upper
 
 
 def junction_depth_m(
@@ -408,13 +422,13 @@ def run_diffusion_with_state(
             surface_exchange_velocity_m_s * max(0.0, surface_reservoir_concentration_m3 - previous[0])
         )
 
-        matrix = _assemble_diffusion_matrix(
+        lower, diag, upper = _assemble_diffusion_matrix(
             diffusivity=diffusivity,
             dt=dt,
             dz=dz,
             surface_exchange_velocity_m_s=surface_exchange_velocity_m_s,
         )
-        zero_exchange_matrix = _assemble_diffusion_matrix(
+        zero_exchange_lower, zero_exchange_diag, zero_exchange_upper = _assemble_diffusion_matrix(
             diffusivity=diffusivity,
             dt=dt,
             dz=dz,
@@ -431,13 +445,20 @@ def run_diffusion_with_state(
                 / dz
             )
 
-        updated = spsolve(matrix, total_rhs)
+        updated = _solve_tridiagonal(lower, diag, upper, total_rhs)
         updated = np.clip(updated, 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
 
-        updated_active_component = spsolve(zero_exchange_matrix, active_component_m3.copy())
-        updated_active_component = np.clip(updated_active_component, 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
-        updated_inactive_component = spsolve(zero_exchange_matrix, inactive_component_m3.copy())
-        updated_inactive_component = np.clip(updated_inactive_component, 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
+        zero_exchange_rhs = np.empty((depth.size, 2), dtype=float)
+        zero_exchange_rhs[:, 0] = active_component_m3
+        zero_exchange_rhs[:, 1] = inactive_component_m3
+        solved_components = _solve_tridiagonal(
+            zero_exchange_lower,
+            zero_exchange_diag,
+            zero_exchange_upper,
+            zero_exchange_rhs,
+        )
+        updated_active_component = np.clip(solved_components[:, 0], 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
+        updated_inactive_component = np.clip(solved_components[:, 1], 0.0, MAX_CONCENTRATION_CM3 * CM3_TO_M3)
 
         silicon_inventory_atoms_m2 = float(np.trapezoid(updated, depth))
         max_step_inventory_atoms_m2 = previous_silicon_inventory_atoms_m2 + inventory[step - 1]

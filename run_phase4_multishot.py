@@ -26,6 +26,7 @@ from laser_doping_sim.phase3_stack_thermal import (
 from laser_doping_sim.phase4_multishot import (
     MultiShotParameters,
     run_multishot_diffusion,
+    run_multishot_diffusion_with_thermal_history,
     save_outputs as save_multishot_outputs,
 )
 from run_phase3 import _fluence_j_cm2, _texture_interface_area_factor
@@ -41,6 +42,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", default="outputs/phase4/multishot_v1_default")
     parser.add_argument("--average-power-w", type=float, default=60.0)
     parser.add_argument("--shots", type=int, default=5)
+    parser.add_argument(
+        "--thermal-history-mode",
+        choices=["reuse_single_pulse", "accumulate"],
+        default="reuse_single_pulse",
+        help=(
+            "reuse_single_pulse = reuse one single-pulse thermal history every shot; "
+            "accumulate = carry the cycle-end temperature field into the next shot."
+        ),
+    )
     parser.add_argument(
         "--source-replenishment-mode",
         choices=["carry", "reset_each_shot"],
@@ -68,6 +78,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--nz", type=int, default=1200)
     parser.add_argument("--dt-ns", type=float, default=0.05)
     parser.add_argument("--t-end-ns", type=float, default=400.0)
+    parser.add_argument(
+        "--cycle-end-ns",
+        type=float,
+        default=None,
+        help=(
+            "Only used for thermal-history-mode=accumulate. If omitted, the shot cycle runs to one full pulse period "
+            "derived from repetition-rate-hz."
+        ),
+    )
     parser.add_argument("--ambient-temp-k", type=float, default=300.0)
     parser.add_argument("--melt-temp-k", type=float, default=1687.0)
     parser.add_argument("--mushy-width-k", type=float, default=20.0)
@@ -103,6 +122,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--initial-inactive-surface-thickness-nm", type=float, default=30.0)
     parser.add_argument("--texture-interface-area-factor", type=float, default=None)
     parser.add_argument("--texture-pyramid-sidewall-angle-deg", type=float, default=None)
+    parser.add_argument(
+        "--fast-output",
+        action="store_true",
+        help=(
+            "Write the core csv/json/npz outputs but skip plots and use uncompressed npz saves "
+            "to reduce post-processing time."
+        ),
+    )
     return parser
 
 
@@ -189,31 +216,69 @@ def main() -> int:
     multishot_params = MultiShotParameters(
         shot_count=args.shots,
         source_replenishment_mode=args.source_replenishment_mode,
+        thermal_history_mode=args.thermal_history_mode,
     )
-
-    stack_result = run_stack_simulation(
-        domain=domain,
-        silicon_material=silicon_material,
-        psg_material=psg_material,
-        pulse=pulse,
-        optics=optics,
-        surface_source=source_layer,
-        substrate_doping=substrate_doping,
-    )
-    thermal_output = save_stack_outputs(stack_result, output_root / "thermal")
-    silicon_view = silicon_subdomain_view(stack_result)
-    multishot_result = run_multishot_diffusion(
-        thermal=silicon_view,
-        params=diffusion_params,
-        multishot_params=multishot_params,
-    )
+    thermal_output = None
+    if args.thermal_history_mode == "reuse_single_pulse":
+        stack_result = run_stack_simulation(
+            domain=domain,
+            silicon_material=silicon_material,
+            psg_material=psg_material,
+            pulse=pulse,
+            optics=optics,
+            surface_source=source_layer,
+            substrate_doping=substrate_doping,
+        )
+        thermal_output = save_stack_outputs(stack_result, output_root / "thermal", fast_output=args.fast_output)
+        silicon_view = silicon_subdomain_view(stack_result)
+        multishot_result = run_multishot_diffusion(
+            thermal=silicon_view,
+            params=diffusion_params,
+            multishot_params=multishot_params,
+        )
+    else:
+        pulse_period_ns = 1.0e9 / args.repetition_rate_hz
+        cycle_end_ns = args.cycle_end_ns if args.cycle_end_ns is not None else pulse_period_ns
+        cycle_domain = StackDomain1D(
+            silicon_thickness=args.si_thickness_um * 1.0e-6,
+            nz=args.nz,
+            dt=args.dt_ns * 1.0e-9,
+            t_end=cycle_end_ns * 1.0e-9,
+            ambient_temp=args.ambient_temp_k,
+            bottom_bc=args.bottom_bc,
+        )
+        multishot_result = run_multishot_diffusion_with_thermal_history(
+            stack_domain=cycle_domain,
+            silicon_material=silicon_material,
+            psg_material=psg_material,
+            pulse=pulse,
+            optics=optics,
+            params=diffusion_params,
+            multishot_params=multishot_params,
+            surface_source=source_layer,
+            substrate_doping=substrate_doping,
+        )
+        if multishot_result.last_stack_thermal is not None:
+            thermal_output = save_stack_outputs(
+                multishot_result.last_stack_thermal,
+                output_root / "thermal_last_shot",
+                fast_output=args.fast_output,
+            )
     multishot_output = save_multishot_outputs(
         multishot_result,
         output_root / "multishot",
         profile_shots=args.profile_shots,
+        fast_output=args.fast_output,
     )
 
-    thermal_summary = json.loads((thermal_output / "summary.json").read_text(encoding="utf-8"))
+    thermal_summary = (
+        json.loads((thermal_output / "summary.json").read_text(encoding="utf-8"))
+        if thermal_output is not None
+        else {
+            "mode": args.thermal_history_mode,
+            "notes": "See the Phase 4 multishot summary for shot-by-shot thermal metrics.",
+        }
+    )
     multishot_summary = json.loads((multishot_output / "summary.json").read_text(encoding="utf-8"))
     combined_summary = {
         "output_dir": str(output_root),
@@ -226,6 +291,7 @@ def main() -> int:
             "spot_diameter_um": args.spot_diameter_um,
             "spot_area_cm2": spot_area_cm2,
             "fluence_j_cm2": fluence_j_cm2,
+            "fast_output": args.fast_output,
         },
         "texture": {
             "reflectance_multiplier": args.texture_reflectance_multiplier,
@@ -237,10 +303,15 @@ def main() -> int:
         "thermal": thermal_summary,
         "multishot": multishot_summary,
     }
+    if args.thermal_history_mode == "accumulate":
+        combined_summary["laser_input"]["pulse_period_ns"] = 1.0e9 / args.repetition_rate_hz
+        combined_summary["laser_input"]["cycle_end_ns"] = (
+            args.cycle_end_ns if args.cycle_end_ns is not None else 1.0e9 / args.repetition_rate_hz
+        )
     with (output_root / "summary.json").open("w", encoding="utf-8") as handle:
         json.dump(combined_summary, handle, indent=2)
 
-    print(f"Saved Phase 4 multi-shot V1 output to: {output_root}")
+    print(f"Saved Phase 4 multi-shot output to: {output_root}")
     return 0
 
 
