@@ -36,8 +36,9 @@ class MultiShotParameters:
     source_replenishment_mode: str = "carry"
     thermal_history_mode: str = "reuse_single_pulse"
     notes: str = (
-        "Phase 4 multi-shot V1 reuses the same single-pulse thermal history for each shot and carries forward "
-        "chemical state and, by default, the remaining source inventory."
+        "Phase 4 multi-shot reuses a single-pulse thermal history in reuse_single_pulse mode and can also "
+        "carry pulse-to-pulse thermal history in accumulate mode while inheriting the chemical state and, "
+        "by default, the remaining source inventory."
     )
 
 

@@ -35,11 +35,11 @@ from run_phase3 import _fluence_j_cm2, _texture_interface_area_factor
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run Phase 4 multi-shot V1: reuse the same single-pulse thermal history each shot while "
-            "carrying forward the chemical P state and source inventory."
+            "Run Phase 4 multi-shot: reuse the same single-pulse thermal history each shot or "
+            "carry pulse-to-pulse thermal history while inheriting the chemical P state."
         )
     )
-    parser.add_argument("--output-dir", default="outputs/phase4/multishot_v1_default")
+    parser.add_argument("--output-dir", default="outputs/phase4/multishot_default")
     parser.add_argument("--average-power-w", type=float, default=60.0)
     parser.add_argument("--shots", type=int, default=5)
     parser.add_argument(
@@ -97,7 +97,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--source-notes",
         default=(
-            "Phase 4 multi-shot V1 keeps the PSG source as a P-rich SiO2 reservoir and, by default, "
+            "Phase 4 multi-shot keeps the PSG source as a P-rich SiO2 reservoir and, by default, "
             "lets the same local source inventory deplete shot-to-shot."
         ),
     )

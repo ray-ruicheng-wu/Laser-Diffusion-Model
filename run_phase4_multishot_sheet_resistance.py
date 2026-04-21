@@ -31,7 +31,14 @@ def build_parser() -> argparse.ArgumentParser:
             "and estimate shot-by-shot sheet resistance."
         )
     )
-    parser.add_argument("--phase4-dir", required=True)
+    parser.add_argument(
+        "--phase4-dir",
+        required=True,
+        help=(
+            "Path to the Phase 4 output root directory, or directly to its 'multishot' "
+            "subdirectory."
+        ),
+    )
     parser.add_argument("--activation-parameter-csv", required=True)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--initial-inactive-activation-fraction", type=float, default=0.06447924522684517)
@@ -44,6 +51,23 @@ def _resolve_from_root(path_text: str) -> Path:
     if path.is_absolute():
         return path
     return ROOT / path
+
+
+def _resolve_phase4_paths(path_text: str) -> tuple[Path, Path]:
+    phase4_path = _resolve_from_root(path_text)
+    multishot_npz_in_root = phase4_path / "phase4_multishot_results.npz"
+    root_summary = phase4_path / "summary.json"
+    multishot_npz_in_child = phase4_path / "multishot" / "phase4_multishot_results.npz"
+
+    if root_summary.exists() and multishot_npz_in_child.exists():
+        return phase4_path, phase4_path / "multishot"
+    if multishot_npz_in_root.exists() and (phase4_path.parent / "summary.json").exists():
+        return phase4_path.parent, phase4_path
+
+    raise FileNotFoundError(
+        "Could not resolve Phase 4 outputs from --phase4-dir. Pass either the Phase 4 output root "
+        "that contains 'summary.json' and a 'multishot' subdirectory, or the 'multishot' subdirectory itself."
+    )
 
 
 def _save_table(rows: list[dict], output_dir: Path, filename: str) -> Path:
@@ -76,7 +100,7 @@ def _plot_metric(
 
 def main() -> int:
     args = build_parser().parse_args()
-    phase4_dir = _resolve_from_root(args.phase4_dir)
+    phase4_dir, multishot_dir = _resolve_phase4_paths(args.phase4_dir)
     activation_parameter_csv = _resolve_from_root(args.activation_parameter_csv)
     output_dir = (
         _resolve_from_root(args.output_dir)
@@ -86,7 +110,7 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     summary = json.loads((phase4_dir / "summary.json").read_text(encoding="utf-8"))
-    multishot_npz = np.load(phase4_dir / "multishot" / "phase4_multishot_results.npz")
+    multishot_npz = np.load(multishot_dir / "phase4_multishot_results.npz")
     model = load_piecewise_multishot_dual_channel_activation_model_csv(
         activation_parameter_csv,
         initial_inactive_activation_fraction=args.initial_inactive_activation_fraction,
