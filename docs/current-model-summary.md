@@ -30,3 +30,4 @@ The merged walkthroughs cover both:
 - [phase4-thermal-history-v2-summary.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase4-thermal-history-v2-summary.md)
 - [formula-reference-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/formula-reference-register.md)
 - [session-log.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/session-log.md)
+- [archive/README.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/archive/README.md)

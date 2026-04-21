@@ -50,6 +50,7 @@ Documentation lives in:
 - `docs/project_model_walkthrough_zh.md`
 - `docs/project_model_walkthrough_en.md`
 - `docs/current-model-summary.md`
+- `docs/archive/README.md`
 - `docs/physics_user_quickstart_zh.md`
 - `docs/physics_user_quickstart_en.md`
 - `docs/physics_parameter_manual_zh.md`
@@ -115,6 +116,14 @@ python .\run_phase4_multishot.py `
 - `--fast-output`
   Keeps the core `csv/json/npz` outputs but skips figure generation and uses uncompressed `npz` saves to reduce post-processing overhead.
 
+## Documentation map
+
+- Use `docs/project_model_walkthrough_zh.md` or `docs/project_model_walkthrough_en.md` as the main technical walkthrough.
+- Use `docs/physics_user_quickstart_zh.md` or `docs/physics_user_quickstart_en.md` for practical run order and output-reading guidance.
+- Use `docs/physics_parameter_manual_zh.md` or `docs/physics_parameter_manual_en.md` when changing physics or command-line parameters.
+- Use `docs/current-model-summary.md` as the short index into the active mainline documents.
+- Use `docs/archive/README.md` for documents that were kept for history but are no longer the active entry points.
+
 ## Recent performance update
 
 - The Phase 3 stack thermal solver and Phase 2 diffusion solver now use LAPACK tridiagonal solves plus vectorized matrix assembly.
@@ -145,6 +154,10 @@ Phase 2 now writes:
 - `junction_depth_vs_time.png`
 - `source_inventory_vs_time.png`
 
-## Next step
+## Current mainline focus
 
-The current next step is to refine the `PSG/SiO2/Si` optical stack using the measured `500 kHz` / `95 um square flat-top` input, then add moving-interface doping physics and any needed scan-overlap corrections.
+The current mainline now supports both single-shot and multi-shot studies. The next modeling steps are mainly:
+
+- tighter multi-shot calibration against measured activation / `Rsh`
+- deciding when `reuse_single_pulse` is sufficient and when `accumulate` is required
+- later optical and moving-interface refinements on top of the stabilized Phase 3 / Phase 4 baseline

@@ -100,4 +100,12 @@
 
 ### 教程同步检查
 
-阶段报告完成后，默认要检查 `docs/project_total_walkthrough_obsidian.md` 是否已经同步更新；`docs/tutorial_update_checklist.md` 视为默认收尾清单的一部分。
+阶段报告完成后，默认要检查下面这些当前主线文档是否已经同步更新：
+
+1. `docs/project_model_walkthrough_zh.md` 或 `docs/project_model_walkthrough_en.md`
+2. `docs/current-model-summary.md`
+3. `docs/physics_user_quickstart_zh.md` 或 `docs/physics_user_quickstart_en.md`
+4. `docs/physics_parameter_manual_zh.md` 或 `docs/physics_parameter_manual_en.md`
+5. `docs/tutorial_update_checklist.md`
+
+如果某份旧文档已经被当前主线文档完全取代，应把它移到 `docs/archive/`，而不是继续把它当作主线入口。

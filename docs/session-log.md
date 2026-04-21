@@ -1766,3 +1766,40 @@ Operational note:
 
 - `--fast-output` is now the preferred switch for long calibration scans when we mainly need the summary tables and raw arrays
 - full plotting output is still available by omitting `--fast-output`
+
+### 2026-04-21: Documentation structure refreshed and duplicate walkthroughs archived
+
+What changed:
+
+- refreshed the top-level documentation map in:
+  - `README.md`
+  - `docs/current-model-summary.md`
+  - `docs/workspace-file-classification.md`
+- updated the active user guides:
+  - `docs/physics_user_quickstart_zh.md`
+  - `docs/physics_user_quickstart_en.md`
+  - `docs/physics_parameter_manual_zh.md`
+  - `docs/physics_parameter_manual_en.md`
+- updated workflow maintenance docs:
+  - `docs/stage-report-template.md`
+  - `docs/tutorial_update_checklist.md`
+- added:
+  - `docs/archive/README.md`
+
+Archived as superseded walkthrough material:
+
+- `docs/project_total_walkthrough_obsidian.md`
+  - moved to `docs/archive/legacy_walkthroughs/project_total_walkthrough_obsidian.md`
+- `docs/project_total_walkthrough_notebook.py`
+  - moved to `docs/archive/legacy_walkthroughs/project_total_walkthrough_notebook.py`
+
+Why this cleanup was needed:
+
+- the old walkthrough index and notebook-style source had already been superseded by the newer unified walkthrough set
+- keeping both the new and old entry points in the active docs list was causing onboarding ambiguity
+- the quickstart and parameter manual also needed to reflect the current Phase 4 multi-shot workflow and the new `--fast-output` option
+
+Current documentation rule:
+
+- active entry points live in the main `docs/` directory
+- superseded but historically useful documents move under `docs/archive/`
