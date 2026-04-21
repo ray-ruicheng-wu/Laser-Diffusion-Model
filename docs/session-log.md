@@ -1613,3 +1613,31 @@ Current conclusion:
 
 - the new activation path is now separable from the old one
 - we can continue testing multi-shot activation behavior without breaking the existing single-shot calibration chain
+
+### 2026-04-21: Accelerated-kernel status vs accumulated-model status clarified
+
+Current code-state check:
+
+- the current checked-in `run_phase4_multishot.py` is still the Phase 4 V1 runner
+- the current checked-in `src/laser_doping_sim/phase4_multishot.py` is also still the V1 implementation
+- so the main executable path in this workspace does **not** currently expose the earlier experimental accumulated thermal-history mode
+
+What is true today:
+
+- benchmark outputs exist for both a baseline and an optimized kernel path:
+  - `outputs/phase4/benchmark_10shot_accumulate_dt005_baseline_20260421`
+  - `outputs/phase4/benchmark_10shot_accumulate_dt005_opt_20260421`
+- these benchmark runs show the optimized kernel preserves the previous accumulated-model benchmark numerics to negligible error
+- approximate wall-clock improvement from those benchmark directories:
+  - baseline: `~986 s`
+  - optimized: `~599 s`
+  - speedup: `~1.65x`
+  - wall-clock reduction: `~39%`
+
+Current conclusion:
+
+- the optimized kernel has been benchmarked against the earlier accumulated-model result set
+- but the optimized kernel has **not yet been re-merged into the current executable accumulated mainline**, because that accumulated mainline is not currently present in the checked-in runner path
+- documentation should therefore distinguish clearly between:
+  - historical / experimental accumulated outputs
+  - current executable Phase 4 V1 mainline
