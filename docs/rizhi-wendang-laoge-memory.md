@@ -287,7 +287,7 @@
 
 ### 教程同步收尾
 
-后续每次阶段报告完成后，默认还要检查 `docs/project_total_walkthrough_obsidian.md` 是否已经同步更新；只有教程同步完成，才算 milestone 真正收尾。
+后续每次阶段报告完成后，默认还要检查当前主线教程 `docs/project_model_walkthrough_zh.md` 是否已经同步更新；只有教程同步完成，才算 milestone 真正收尾。
 
 ### 裁剪版 P profile 合并对比图
 

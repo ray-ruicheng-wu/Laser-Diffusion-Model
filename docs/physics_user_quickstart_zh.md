@@ -60,6 +60,12 @@ pip install -r requirements.txt
   - 功率扫描入口
 - [run_sheet_resistance_cases.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_sheet_resistance_cases.py)
   - `Rsh` 后处理入口
+- [run_phase4_multishot.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot.py)
+  - 多脉冲化学 / 热历史入口
+- [run_build_multishot_activation_bootstrap.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_build_multishot_activation_bootstrap.py)
+  - 多脉冲活化 bootstrap 表生成入口
+- [run_phase4_multishot_sheet_resistance.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot_sheet_resistance.py)
+  - 多脉冲 `Rsh` 后处理入口
 
 ## 3. 推荐的完整测试顺序
 
@@ -70,6 +76,7 @@ pip install -r requirements.txt
 3. 再跑 `Phase 3`，进入正式 `PSG/Si` 模型
 4. 如果有多组功率，跑 `power scan`
 5. 最后用 `Rsh` 后处理与实验对照
+6. 如果关心 shot-to-shot 累积，再进入 `Phase 4`
 
 下面按这个顺序给出“最小完整测试”。
 
@@ -315,7 +322,67 @@ python .\run_sheet_resistance_cases.py `
 - `Rsh af`
 - active / inactive / injected 的拆分是否合理
 
-## 11. 最常见的调参方向
+## 11. 可选扩展：跑一组 Phase 4 多脉冲 case
+
+如果你想把同一套流程继续扩展到重复脉冲，推荐先跑这样一组：
+
+```powershell
+python .\run_phase4_multishot.py `
+  --output-dir outputs/phase4/tutorial_multishot_case `
+  --average-power-w 60 `
+  --shots 10 `
+  --thermal-history-mode accumulate `
+  --cycle-end-ns 2000 `
+  --dt-ns 0.05 `
+  --nz 300 `
+  --profile-shots 1 2 5 10 `
+  --fast-output
+```
+
+其中：
+
+- `reuse_single_pulse` 适合更快的 chemistry-only 多脉冲近似
+- `accumulate` 适合看真实的 shot-to-shot 热历史延续
+- `--fast-output` 适合长计算，只保留 `csv/json/npz`
+
+这一步最先读：
+
+- `multishot/multishot_summary.csv`
+- `multishot/summary.json`
+- 根目录 `summary.json`
+
+重点量：
+
+- `shot_injected_dose_cm2`
+- `cumulative_injected_dose_cm2`
+- `final_junction_depth_nm`
+- `remaining_source_inventory_atoms_m2`
+- `peak_silicon_surface_temperature_k`
+- `cycle_end_silicon_surface_temperature_k`
+
+## 12. 可选扩展：做多脉冲 `Rsh` 后处理
+
+如果你已经有多脉冲活化参数表，可以运行：
+
+```powershell
+python .\run_phase4_multishot_sheet_resistance.py `
+  --phase4-dir outputs/phase4/tutorial_multishot_case `
+  --activation-parameter-csv outputs/phase4/multishot_activation_bootstrap_scan_60w_1to10/multishot_dual_channel_params.csv `
+  --output-dir outputs/phase4/tutorial_multishot_case/multishot_rsh
+```
+
+最先读：
+
+- `multishot_sheet_resistance_summary.csv`
+- `expanded_multishot_activation_table.csv`
+
+重点看：
+
+- `eta_inactive`
+- `eta_injected`
+- `rsh_after_ohm_per_sq`
+- `Rsh` 和活化率是否随 shot 数单调演化
+## 13. 最常见的调参方向
 
 如果你发现“完全不熔”，优先检查：
 
@@ -340,7 +407,7 @@ python .\run_sheet_resistance_cases.py `
 - `injected_activation_fraction`
 - measured profile 的 active / inactive 拆分
 
-## 12. 新用户最容易犯的错误
+## 14. 新用户最容易犯的错误
 
 1. 把 `Phase 1` 的单层吸收参数直接当成 `Phase 3 PSG/Si` 的正式光学参数
 2. 混淆“总 P”和“electrically active donor”
@@ -348,7 +415,7 @@ python .\run_sheet_resistance_cases.py `
 4. 用 `Rsh` 后处理参数去反推主扩散模型已经显式包含了电活化
 5. 不先看 `summary.json` 就直接凭图像印象判断结果
 
-## 13. 接下来该看哪份文档
+## 15. 接下来该看哪份文档
 
 如果你已经能跑通流程，下一步建议看：
 

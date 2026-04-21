@@ -1046,7 +1046,64 @@ Rsh = 1 / G_sheet
 
 这类脚本的作用不是改热学/扩散，而是校准高功率区的经验活化读法。
 
-### 15.4 `run_phase3_physics_validation.py`
+### 15.4 `run_phase4_multishot.py`
+
+这是多脉冲 chemistry / thermal-history 主入口。
+
+主要参数：
+
+- `--average-power-w`
+  - 平均激光功率
+  - 通过重复频率和光斑面积决定单脉冲 fluence
+- `--shots`
+  - 脉冲个数
+  - 增大后会加强累积化学效应和热历史效应
+- `--thermal-history-mode`
+  - `reuse_single_pulse`：每个 shot 复用同一份单脉冲热史
+  - `accumulate`：把上一 shot 的 cycle-end 温度带到下一 shot
+- `--cycle-end-ns`
+  - `accumulate` 模式下每个 shot 周期结束时间
+  - 变大后允许更多冷却再进入下一脉冲
+- `--source-replenishment-mode`
+  - 控制多脉冲间 source inventory 是继承还是重置
+- `--profile-shots`
+  - 指定哪些 shot 保存详细 profile
+- `--fast-output`
+  - 保留核心 `csv/json/npz`，但不画图
+  - 适合长 benchmark 和长标定计算
+- `--nz`
+  - 堆栈总网格数
+  - 增大后分辨率更高，但运行更慢
+- `--dt-ns`
+  - 热学时间步
+  - 变小后阈值区更可靠，但运行更慢
+
+最重要的物理理解：
+
+- `thermal-history-mode` 改的是多脉冲热假设
+- `shots` 改的是累积化学历史长度
+- `fast-output` 只改输出开销，不改物理求解
+
+### 15.5 `run_phase4_multishot_sheet_resistance.py`
+
+这是多脉冲电学后处理入口。
+
+主要参数：
+
+- `--phase4-dir`
+  - 已有的多脉冲 chemistry 输出目录
+- `--activation-parameter-csv`
+  - 多脉冲 dual-channel 活化参数表
+- `--output-dir`
+  - `Rsh` 后处理输出目录
+
+主要理解：
+
+- 它不会改动 chemistry 解
+- 它是在 shot-by-shot 地套用经验电学校准层
+- 最重要的输出是活化率和 `Rsh` 随 shot 数的变化
+
+### 15.6 `run_phase3_physics_validation.py`
 
 这是功率扫描结果的物理一致性检查脚本。
 

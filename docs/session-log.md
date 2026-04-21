@@ -1641,3 +1641,192 @@ Current conclusion:
 - documentation should therefore distinguish clearly between:
   - historical / experimental accumulated outputs
   - current executable Phase 4 V1 mainline
+### 2026-04-20: Phase 4 thermal-history V2 scaffold added
+
+What we added:
+
+- `src/laser_doping_sim/phase3_stack_thermal.py`
+  - `run_stack_simulation(...)` now accepts a non-ambient initial temperature field
+- `src/laser_doping_sim/phase4_multishot.py`
+  - new `thermal_history_mode`
+  - new `run_multishot_diffusion_with_thermal_history(...)`
+  - shot-by-shot thermal metrics saved into the Phase 4 output
+- `run_phase4_multishot.py`
+  - new `--thermal-history-mode`
+  - new `--cycle-end-ns`
+- `docs/phase4-thermal-history-v2-summary.md`
+
+What it does:
+
+- V1 path still exists:
+  - reuse one single-pulse thermal history for every shot
+- new V2 path:
+  - rerun the thermal stack for each shot
+  - carry the previous cycle-end temperature profile into the next shot
+  - still carry forward the chemical state and the remaining PSG source inventory
+
+Smoke-test status:
+
+- lightweight validation run:
+  - `outputs/phase4/tmp_multishot_accumulate_60w_2shots_smoke_fast`
+- this confirmed that thermal memory is being transferred shot-to-shot:
+  - Shot 1 initial silicon surface temperature = `300.0 K`
+  - Shot 1 cycle-end silicon surface temperature = `328.17 K`
+  - Shot 2 initial silicon surface temperature = `328.17 K`
+
+Current conclusion:
+
+- the thermal-history chain is now implemented and numerically connected
+- the next real step is not more code structure work
+- the next real step is a production-resolution `reuse_single_pulse` vs `accumulate` comparison at the same power and activation settings
+
+### 2026-04-20: 60 W thermal-history comparison completed
+
+Fair-comparison rule used:
+
+- same power: `60 W`
+- same repetition rate: `500 kHz`
+- same full pulse period: `2000 ns`
+- only change: `thermal_history_mode`
+  - `reuse_single_pulse`
+  - `accumulate`
+
+Scout comparison run:
+
+- `outputs/phase4/compare_60w_reuse_cycle2000ns_5shots_dt02_nz300`
+- `outputs/phase4/compare_60w_accumulate_cycle2000ns_5shots_dt02_nz300`
+
+Scout result:
+
+- `accumulate` produced stronger thermal carryover and lower `Rsh`
+- but this scout setting also over-predicted melting compared with the earlier fine single-cycle 60 W check
+
+Fine verification run:
+
+- `outputs/phase4/compare_60w_reuse_cycle2000ns_2shots_dt005_nz300_verify`
+- `outputs/phase4/compare_60w_accumulate_cycle2000ns_2shots_dt005_nz300_verify`
+
+Fine verification result:
+
+- both `reuse` and `accumulate` remained non-melting at `60 W`
+- Shot 2 initial silicon surface temperature in `accumulate` inherited the Shot 1 cycle-end value:
+  - `317.56 K`
+- Shot 2 peak silicon surface temperature:
+  - `reuse`: `1677.18 K`
+  - `accumulate`: `1679.93 K`
+- Shot 2 injected dose:
+  - `reuse`: `1.23e12 cm^-2`
+  - `accumulate`: `3.02e14 cm^-2`
+- Shot 2 final junction depth stayed very similar:
+  - `reuse`: `388.39 nm`
+  - `accumulate`: `387.89 nm`
+- Shot 2 `Rsh`:
+  - `reuse`: `87.53 ohm/sq`
+  - `accumulate`: `67.44 ohm/sq`
+
+Current conclusion:
+
+- the existence of pulse-to-pulse thermal accumulation is now numerically confirmed
+- at `60 W`, the coarse mesh/time-step can exaggerate melting and therefore exaggerate the chemistry difference
+- the fine verification suggests the more realistic `60 W` picture is:
+  - small thermal uplift
+  - no melt
+  - similar junction depth
+  - potentially meaningful extra near-surface injected/activated dose
+
+### 2026-04-21: Phase 4 acceleration path integrated into the main workspace
+
+What we integrated:
+
+- `src/laser_doping_sim/phase3_stack_thermal.py`
+  - replaced the sparse generic solve with LAPACK tridiagonal solve `dgtsv`
+  - precomputed static thermal masks, density, and laser source profile
+  - vectorized the tridiagonal matrix assembly
+- `src/laser_doping_sim/phase2_diffusion.py`
+  - replaced the sparse generic solve with LAPACK tridiagonal solve `dgtsv`
+  - vectorized diffusion matrix assembly
+  - solved the active and inactive component transport in one batched tridiagonal call
+- `src/laser_doping_sim/phase4_multishot.py`
+  - added `fast_output` support
+  - fast mode keeps core `csv/json/npz` files and skips plotting
+  - fixed the selected-profile plotting loop so all requested shots are drawn
+- `run_phase4_multishot.py`
+  - added the CLI switch `--fast-output`
+
+Why this was done:
+
+- long `accumulate` pulse-train runs were spending most of their wall time in repeated tridiagonal assembly and solve steps
+- post-processing plots and compressed `npz` saves also added noticeable overhead for benchmark-style runs
+
+Benchmark case used for comparison:
+
+- `60 W`
+- `10 shots`
+- `thermal-history-mode = accumulate`
+- `cycle_end_ns = 2000`
+- `dt = 0.05 ns`
+- `nz = 300`
+
+Measured progression:
+
+- reconstructed pre-acceleration baseline:
+  - `989.44 s`
+- acceleration round 1:
+  - `602.68 s`
+- acceleration round 2:
+  - `512.35 s`
+- acceleration round 3:
+  - `134.70 s`
+
+Observed speedup:
+
+- final integrated acceleration is about `7.35x` faster than the reconstructed pre-acceleration benchmark
+- this is about `86.4%` wall-time reduction for the benchmark case
+
+Numerical validation:
+
+- the accelerated path was checked against the earlier `60 W`, `1-shot`, `accumulate`, `dt = 0.05 ns`, `nz = 300` reference run
+- key chemistry and thermal metrics matched to numerical precision
+- the mainline physics interpretation was not changed by this acceleration step
+
+Operational note:
+
+- `--fast-output` is now the preferred switch for long calibration scans when we mainly need the summary tables and raw arrays
+- full plotting output is still available by omitting `--fast-output`
+
+### 2026-04-21: Documentation structure refreshed and duplicate walkthroughs archived
+
+What changed:
+
+- refreshed the top-level documentation map in:
+  - `README.md`
+  - `docs/current-model-summary.md`
+  - `docs/workspace-file-classification.md`
+- updated the active user guides:
+  - `docs/physics_user_quickstart_zh.md`
+  - `docs/physics_user_quickstart_en.md`
+  - `docs/physics_parameter_manual_zh.md`
+  - `docs/physics_parameter_manual_en.md`
+- updated workflow maintenance docs:
+  - `docs/stage-report-template.md`
+  - `docs/tutorial_update_checklist.md`
+- added:
+  - `docs/archive/README.md`
+
+Archived as superseded walkthrough material:
+
+- `docs/project_total_walkthrough_obsidian.md`
+  - moved to `docs/archive/legacy_walkthroughs/project_total_walkthrough_obsidian.md`
+- `docs/project_total_walkthrough_notebook.py`
+  - moved to `docs/archive/legacy_walkthroughs/project_total_walkthrough_notebook.py`
+
+Why this cleanup was needed:
+
+- the old walkthrough index and notebook-style source had already been superseded by the newer unified walkthrough set
+- keeping both the new and old entry points in the active docs list was causing onboarding ambiguity
+- the quickstart and parameter manual also needed to reflect the current Phase 4 multi-shot workflow and the new `--fast-output` option
+
+Current documentation rule:
+
+- active entry points live in the main `docs/` directory
+- superseded but historically useful documents move under `docs/archive/`
