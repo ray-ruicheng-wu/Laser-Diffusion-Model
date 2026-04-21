@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - laser-doping
   - psg
@@ -28,7 +28,10 @@ tags:
 
 ## 2. 当前项目一句话总结
 
-当前模型是一套 **1D、单脉冲、测量驱动的激光磷重分布/注入模型**。
+当前模型可以概括为一套 **1D、测量驱动的激光磷重分布/注入主线**：
+
+- 单脉冲部分以 `Phase 3` 的 `PSG/Si` 主线为核心
+- 多脉冲部分以 `Phase 4` 的 shot-to-shot 扩展为继续外推
 
 它的物理主链条是：
 
@@ -282,7 +285,7 @@ N_{D,\mathrm{active,component}}
 分成两条通道分别标定。当前方法见：
 
 - `run_dual_channel_activation_calibration.py`
-- `docs/dual-channel-activation-method.md`
+- `docs/phases/phase0_data_and_calibration/dual-channel-activation-method.md`
 
 这一步目前的结论是：
 
@@ -441,14 +444,14 @@ N_{D,\mathrm{active,component}}
 
 - `docs/formula-reference-register.md`
 - `docs/literature-usage-register.md`
-- `docs/laser-activation-literature-notes.md`
+- `docs/phases/phase0_data_and_calibration/laser-activation-literature-notes.md`
 
 ### 阶段分析
 
-- `docs/phase1-analysis.md`
-- `docs/phase2-analysis.md`
-- `docs/phase3-analysis.md`
-- `docs/phase3-physics-validation.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-analysis.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-physics-validation.md`
 
 ### 教学文档
 
@@ -479,3 +482,4 @@ N_{D,\mathrm{active,component}}
 - 片电阻对照
 
 这几条主线连接起来了，并且能够稳定地支持下一轮更细的物理升级。
+

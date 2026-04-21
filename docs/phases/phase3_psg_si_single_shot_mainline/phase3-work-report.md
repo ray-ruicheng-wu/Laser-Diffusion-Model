@@ -1,4 +1,4 @@
-# Phase 3 工作报告
+﻿# Phase 3 工作报告
 
 ## 1. 阶段信息
 
@@ -354,7 +354,7 @@
 
 1. [literature-usage-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/literature-usage-register.md)
 2. [formula-reference-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/formula-reference-register.md)
-3. [phase3-analysis.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase3-analysis.md)
+3. [phase3-analysis.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md)
 
 新增并采用的 texture 公式：
 
@@ -380,3 +380,4 @@
 1. `peak_surface_injection_flux = 0`
 2. `cumulative_injected_dose = 0`
 3. 所以 profile 变化来自初始高表面 P 的热驱动再分布
+

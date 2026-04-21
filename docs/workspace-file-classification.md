@@ -1,193 +1,314 @@
-# 工作区文件分类索引
+﻿# 工作区文件分类索引
 
-这份文档的目标是给当前工作区建立一套清晰的“主线地图”。
+这份文档专门给 `main` 工作区做分类。
 
-重点不是把所有历史文件删掉，而是区分：
+目标不是把文件名全部背下来，而是回答 3 个问题：
 
-- 哪些是当前主线文档
-- 哪些是当前主线输入
-- 哪些是主线运行脚本
-- 哪些是阶段性技术说明
-- 哪些只是历史保留或归档
+1. 每个 phase 的标题是什么
+2. 这一步主要做什么
+3. 这个 phase 对应的脚本、模块、输出和文档分别在哪
 
-## 1. 推荐先看的主线文档
+## 1. 最推荐先看的入口文档
 
-如果你是第一次进入这个项目，优先按下面顺序读：
+如果你第一次进入这个项目，建议按这个顺序：
 
-1. [project_model_walkthrough_zh.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/project_model_walkthrough_zh.md)
-2. [project_model_walkthrough_en.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/project_model_walkthrough_en.md)
-3. [physics_user_quickstart_zh.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/physics_user_quickstart_zh.md)
-4. [physics_user_quickstart_en.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/physics_user_quickstart_en.md)
-5. [physics_parameter_manual_zh.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/physics_parameter_manual_zh.md)
-6. [physics_parameter_manual_en.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/physics_parameter_manual_en.md)
-7. [current-model-summary.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/current-model-summary.md)
+1. `docs/mainline-phase-map.md`
+2. `docs/project_model_walkthrough_zh.md`
+3. `docs/physics_user_quickstart_zh.md`
+4. `docs/physics_parameter_manual_zh.md`
+5. `docs/current-model-summary.md`
 
-它们分别承担的角色是：
+它们的作用分别是：
 
-- `project_model_walkthrough_*`
-  当前统一主教程与主线总说明
-- `physics_user_quickstart_*`
-  面向使用者的运行顺序、结果读取和完整测试入口
-- `physics_parameter_manual_*`
-  面向调参与建模的参数手册
+- `mainline-phase-map.md`
+  - 用 phase 视角看整个工作区
+- `docs/phases/README.md`
+  - 在 docs 目录树里直接按 phase 导航
+- `project_model_walkthrough_zh.md`
+  - 看建模故事和当前主线逻辑
+- `physics_user_quickstart_zh.md`
+  - 看运行顺序和结果怎么读
+- `physics_parameter_manual_zh.md`
+  - 看参数怎么改
 - `current-model-summary.md`
-  面向快速导航的短索引
+  - 看最短导航索引
 
-## 2. 当前主线运行脚本
+## 2. 按 Phase 分类的主线文件
 
-这些脚本是当前最重要的运行入口：
+如果你在文件树里更喜欢“直接点开一个 phase 文件夹”，现在也可以从这里开始：
 
-- [run_phase1.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase1.py)
-- [run_phase2.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase2.py)
-- [run_phase3.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase3.py)
-- [run_phase3_power_scan.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase3_power_scan.py)
-- [run_sheet_resistance_cases.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_sheet_resistance_cases.py)
-- [run_phase4_multishot.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot.py)
-- [run_build_multishot_activation_bootstrap.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_build_multishot_activation_bootstrap.py)
-- [run_phase4_multishot_sheet_resistance.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot_sheet_resistance.py)
+- `docs/phases/phase0_data_and_calibration/`
+- `docs/phases/phase1_single_layer_thermal/`
+- `docs/phases/phase2_single_shot_diffusion/`
+- `docs/phases/phase3_psg_si_single_shot_mainline/`
+- `docs/phases/phase4_multishot_mainline/`
 
-配套输入准备脚本：
+### Phase 0
 
-- [prepare_measured_initial_profile.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/prepare_measured_initial_profile.py)
+Title：
 
-## 3. `src/laser_doping_sim/` 主模块
+`数据准备与电学校准输入`
 
-### 3.1 热学
+这一步做什么：
 
-- [phase1_thermal.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/phase1_thermal.py)
-  单层 Si 热模型
-- [phase3_stack_thermal.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/phase3_stack_thermal.py)
-  `PSG/Si` 堆栈热模型
+- 把 `SIMS + ECV` 原始信息整理成 measured 初始 profile
+- 准备单脉冲 / 多脉冲的经验活化输入
+- 为后续 `Rsh` 标定准备数据口径
 
-### 3.2 扩散与多脉冲
+主要脚本：
 
-- [phase2_diffusion.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/phase2_diffusion.py)
-  单脉冲扩散与 source exchange
-- [phase4_multishot.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/phase4_multishot.py)
-  多脉冲 shot-to-shot 继承
+- `prepare_measured_initial_profile.py`
+- `run_dual_channel_activation_calibration.py`
+- `run_dual_channel_high_power_refit.py`
+- `run_dual_channel_monotonic_segment_refit.py`
+- `run_sheet_resistance_cases.py`
 
-### 3.3 电学后处理
+主要模块：
 
-- [sheet_resistance.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/sheet_resistance.py)
-  片电阻积分与 Masetti 迁移率
-- [activation_models.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/activation_models.py)
-  单脉冲和多脉冲经验活化模型
+- `src/laser_doping_sim/measured_profiles.py`
+- `src/laser_doping_sim/activation_models.py`
+- `src/laser_doping_sim/sheet_resistance.py`
 
-### 3.4 measured 输入
+主要输入：
 
-- [measured_profiles.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/measured_profiles.py)
-  `SIMS + ECV` 处理后的 measured 初始轮廓
+- `inputs/raw_measurements/`
+- `inputs/measured_profiles/`
+- `inputs/activation_models/`
 
-## 4. 当前主线输入
+### Phase 1
 
-### 4.1 measured 初始轮廓
+Title：
 
-- [ctv_measured_initial_profile.csv](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/inputs/measured_profiles/ctv_measured_initial_profile.csv)
-- [ctv_measured_initial_profile_summary.json](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/inputs/measured_profiles/ctv_measured_initial_profile_summary.json)
+`单层 Si 热学基线`
 
-这组文件属于当前化学主线输入。
+这一步做什么：
 
-### 4.2 单脉冲电学校准输入
+- 只算热学
+- 建立单层 Si 的激光加热、相变、熔深时间窗
 
-- [measured_rsh_24_60w.csv](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/inputs/activation_models/measured_rsh_24_60w.csv)
+主要脚本：
 
-### 4.3 多脉冲电学校准输入
+- `run_phase1.py`
 
-当前多脉冲活化参数一般来自新的 Phase 4 输出目录，而不是旧的单脉冲表直接覆盖：
+主要模块：
 
-- `outputs/phase4/.../multishot_dual_channel_params.csv`
+- `src/laser_doping_sim/phase1_thermal.py`
 
-## 5. `outputs/` 怎么理解
+主要输出目录：
 
-### 5.1 `outputs/phase1`
+- `outputs/phase1/`
 
-最早期热学基线、网格与时间步检查。
+主要文档：
 
-### 5.2 `outputs/phase2`
+- `docs/phases/phase1_single_layer_thermal/phase1-analysis.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-code-explained.md`
 
-单层扩散和边界条件历史验证结果。
+### Phase 2
 
-### 5.3 `outputs/phase3`
+Title：
 
-当前单脉冲主线结果库，主要包括：
+`单脉冲热驱动总磷扩散`
 
-- 单个 measured 主线 case
-- 功率扫描
-- 单脉冲 `Rsh` 后处理
-- dual-channel activation 标定表
+这一步做什么：
 
-### 5.4 `outputs/phase4`
+- 在 `Phase 1` 热历史上求总磷扩散
+- 加入表面 source exchange 和库存守恒
+- 生成第一次可用的结深和浓度分布
 
-当前多脉冲主线结果库，主要包括：
+主要脚本：
 
-- multi-shot chemistry
-- thermal-history accumulate 测试
-- multi-shot activation bootstrap
-- multi-shot `Rsh` 后处理
+- `run_phase2.py`
 
-如果你在看当前最活跃的 pulse-train 主线，优先看这里。
+主要模块：
 
-## 6. 当前主线技术文档
+- `src/laser_doping_sim/phase2_diffusion.py`
+- `src/laser_doping_sim/phase1_thermal.py`
 
-### 6.1 主线说明与导航
+主要输出目录：
 
-- [current-model-summary.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/current-model-summary.md)
-- [session-log.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/session-log.md)
-- [workspace-file-classification.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/workspace-file-classification.md)
+- `outputs/phase2/`
 
-### 6.2 Phase 说明
+主要文档：
 
-- [phase1-analysis.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase1-analysis.md)
-- [phase2-analysis.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase2-analysis.md)
-- [phase3-analysis.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase3-analysis.md)
-- [phase4-multishot-v1-summary.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase4-multishot-v1-summary.md)
-- [phase4-thermal-history-v2-summary.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phase4-thermal-history-v2-summary.md)
+- `docs/phases/phase2_single_shot_diffusion/phase2-analysis.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-code-explained.md`
+- `docs/phases/phase2_single_shot_diffusion/boundary-condition-review.md`
 
-### 6.3 公式、文献与口径
+### Phase 3
 
-- [formula-reference-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/formula-reference-register.md)
-- [dual-channel-activation-method.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/dual-channel-activation-method.md)
-- [literature-usage-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/literature-usage-register.md)
-- [boundary-condition-review.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/boundary-condition-review.md)
-- [interface-model-literature-notes.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/interface-model-literature-notes.md)
-- [laser-activation-literature-notes.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/laser-activation-literature-notes.md)
-- [literature-gap-analysis.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/literature-gap-analysis.md)
+Title：
 
-### 6.4 教学与辅助文档
+`PSG/Si 双层单脉冲主线与实验对标`
 
-- [modeling_tutorial_for_materials_undergrads.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/modeling_tutorial_for_materials_undergrads.md)
-- [python_code_teaching_for_beginners.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/python_code_teaching_for_beginners.md)
-- [stage-report-template.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/stage-report-template.md)
-- [tutorial_update_checklist.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/tutorial_update_checklist.md)
+这一步做什么：
 
-## 7. 已归档文档
+- 把热模型升级成 `PSG/Si` 双层
+- 并入 measured initial profile
+- 做功率扫描、物理验证和单脉冲 `Rsh` 对照
 
-已被新主线 walkthrough 取代、但仍保留历史价值的文档，放在：
+这也是当前最重要的单脉冲主线。
 
-- [archive/README.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/archive/README.md)
+主要脚本：
 
-当前已归档：
+- `run_phase3.py`
+- `run_phase3_power_scan.py`
+- `run_phase3_physics_validation.py`
+- `run_sheet_resistance_cases.py`
 
-- [project_total_walkthrough_obsidian.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/archive/legacy_walkthroughs/project_total_walkthrough_obsidian.md)
-- [project_total_walkthrough_notebook.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/archive/legacy_walkthroughs/project_total_walkthrough_notebook.py)
+主要模块：
 
-## 8. 如果现在只想看“当前主线”，最短路径是什么
+- `src/laser_doping_sim/phase3_stack_thermal.py`
+- `src/laser_doping_sim/phase2_diffusion.py`
+- `src/laser_doping_sim/measured_profiles.py`
+- `src/laser_doping_sim/activation_models.py`
+- `src/laser_doping_sim/sheet_resistance.py`
 
-只看这几项就够：
+主要输出目录：
 
-### 文档
+- `outputs/phase3/default_run/`
+- `outputs/phase3/power_scan_.../`
+- `outputs/phase3/sheet_resistance_.../`
+- `outputs/phase3/dual_channel_activation_.../`
 
-- [project_model_walkthrough_zh.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/project_model_walkthrough_zh.md)
-- [physics_user_quickstart_zh.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/physics_user_quickstart_zh.md)
-- [physics_parameter_manual_zh.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/physics_parameter_manual_zh.md)
+主要文档：
 
-### 输入
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-code-explained.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-physics-validation.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-physics-validation-work-report.md`
+- `docs/phases/phase0_data_and_calibration/dual-channel-activation-method.md`
 
-- [ctv_measured_initial_profile.csv](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/inputs/measured_profiles/ctv_measured_initial_profile.csv)
+### Phase 4
 
-### 代码
+Title：
 
-- [run_phase3.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase3.py)
-- [run_phase4_multishot.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot.py)
-- [run_sheet_resistance_cases.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_sheet_resistance_cases.py)
-- [run_phase4_multishot_sheet_resistance.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/run_phase4_multishot_sheet_resistance.py)
+`多脉冲 thermal-history 与 multi-shot 电学扩展`
+
+这一步做什么：
+
+- 把单脉冲主线扩展到 repeated shots
+- 支持 `reuse_single_pulse` 和 `accumulate`
+- 继续做 multi-shot 注入、multi-shot 活化和 `Rsh` 后处理
+
+主要脚本：
+
+- `run_phase4_multishot.py`
+- `run_single_cycle_cooling_check.py`
+- `run_build_multishot_activation_bootstrap.py`
+- `run_phase4_multishot_sheet_resistance.py`
+
+主要模块：
+
+- `src/laser_doping_sim/phase4_multishot.py`
+- `src/laser_doping_sim/phase3_stack_thermal.py`
+- `src/laser_doping_sim/activation_models.py`
+- `src/laser_doping_sim/sheet_resistance.py`
+
+主要输出目录：
+
+- `outputs/phase4/.../multishot/`
+- `outputs/phase4/.../thermal/`
+- `outputs/phase4/.../thermal_last_shot/`
+- `outputs/phase4/.../multishot_rsh/`
+
+主要文档：
+
+- `docs/phases/phase4_multishot_mainline/phase4-multishot-v1-summary.md`
+- `docs/phases/phase4_multishot_mainline/phase4-thermal-history-v2-summary.md`
+
+## 3. `src/laser_doping_sim/` 怎么理解
+
+如果只看核心模块，可以按功能拆成 4 类：
+
+### 热学
+
+- `phase1_thermal.py`
+  - 单层 Si 热学
+- `phase3_stack_thermal.py`
+  - `PSG/Si` 双层热学
+
+### 扩散
+
+- `phase2_diffusion.py`
+  - 单脉冲总磷扩散与 source exchange
+- `phase4_multishot.py`
+  - 多脉冲 shot-to-shot 继承与 thermal-history 扩展
+
+### 电学
+
+- `sheet_resistance.py`
+  - `Rsh` 积分和迁移率模型
+- `activation_models.py`
+  - 单脉冲 / 多脉冲经验活化模型
+
+### measured 输入
+
+- `measured_profiles.py`
+  - `SIMS + ECV` 处理后的主线 profile
+
+## 4. `outputs/` 怎么看
+
+- `outputs/phase1/`
+  - 热学基线与网格 / 时间步测试
+- `outputs/phase2/`
+  - 单脉冲扩散和边界条件验证
+- `outputs/phase3/`
+  - 当前单脉冲主线、功率扫描、单脉冲 `Rsh`
+- `outputs/phase4/`
+  - 当前多脉冲主线、thermal-history、bootstrap 和 multi-shot `Rsh`
+
+如果你现在最关心 pulse-train 主线，优先看 `outputs/phase4/`。
+
+## 5. 横跨所有 Phase 的公共文档
+
+### 主教程与用户入口
+
+- `docs/project_model_walkthrough_zh.md`
+- `docs/project_model_walkthrough_en.md`
+- `docs/physics_user_quickstart_zh.md`
+- `docs/physics_user_quickstart_en.md`
+- `docs/physics_parameter_manual_zh.md`
+- `docs/physics_parameter_manual_en.md`
+
+### 公式、文献和统一口径
+
+- `docs/formula-reference-register.md`
+- `docs/literature-usage-register.md`
+- `docs/phases/phase2_single_shot_diffusion/interface-model-literature-notes.md`
+- `docs/phases/phase0_data_and_calibration/laser-activation-literature-notes.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/literature-gap-analysis.md`
+
+### 日志与阶段记录
+
+- `docs/session-log.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-work-report.md`
+- `docs/stage-report-template.md`
+
+## 6. 归档区
+
+历史但不再作为主入口的内容放在：
+
+- `docs/archive/`
+
+如果你只是想接手当前主线，不需要先看这里。
+
+## 7. 如果现在只想看“当前 main 主线”，最短路径是什么
+
+文档：
+
+- `docs/mainline-phase-map.md`
+- `docs/project_model_walkthrough_zh.md`
+- `docs/physics_user_quickstart_zh.md`
+- `docs/current-model-summary.md`
+
+输入：
+
+- `inputs/measured_profiles/ctv_measured_initial_profile.csv`
+
+代码：
+
+- `run_phase3.py`
+- `run_phase4_multishot.py`
+- `run_sheet_resistance_cases.py`
+- `run_phase4_multishot_sheet_resistance.py`
+

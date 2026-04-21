@@ -1,4 +1,4 @@
----
+﻿---
 tags:
   - laser-doping
   - psg
@@ -30,7 +30,10 @@ It answers five questions:
 
 ## 2. One-Sentence Summary of the Current Model
 
-The current workflow is a **1D, single-pulse, measurement-driven laser phosphorus redistribution / injection model**.
+The current workflow can be summarized as a **1D, measurement-driven laser phosphorus redistribution / injection mainline**:
+
+- the single-shot baseline is centered on the `Phase 3` `PSG/Si` workflow
+- the multi-shot extension is carried by the `Phase 4` shot-to-shot model
 
 Its physical chain is:
 
@@ -284,7 +287,7 @@ This separates:
 The implementation and method notes are now in:
 
 - `run_dual_channel_activation_calibration.py`
-- `docs/dual-channel-activation-method.md`
+- `docs/phases/phase0_data_and_calibration/dual-channel-activation-method.md`
 
 The current modeling conclusion is:
 
@@ -447,14 +450,14 @@ The reason is simple:
 
 - `docs/formula-reference-register.md`
 - `docs/literature-usage-register.md`
-- `docs/laser-activation-literature-notes.md`
+- `docs/phases/phase0_data_and_calibration/laser-activation-literature-notes.md`
 
 ### Stage-specific analysis
 
-- `docs/phase1-analysis.md`
-- `docs/phase2-analysis.md`
-- `docs/phase3-analysis.md`
-- `docs/phase3-physics-validation.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-analysis.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-physics-validation.md`
 
 ### Teaching-oriented documents
 
@@ -485,3 +488,4 @@ The main value of the current model is not that it already predicts every part o
 - sheet-resistance comparison
 
 into one stable workflow that is ready for the next round of physics upgrades.
+

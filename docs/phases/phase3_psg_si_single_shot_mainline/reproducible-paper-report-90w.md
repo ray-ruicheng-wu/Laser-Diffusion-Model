@@ -1,4 +1,4 @@
-# 90W 激光磷掺杂复现实验报告
+﻿# 90W 激光磷掺杂复现实验报告
 
 ## 1. 摘要
 
@@ -73,7 +73,7 @@
 ### 3.3 公式与文献台账
 
 - [formula-reference-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/formula-reference-register.md)
-- [boundary-condition-review.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/boundary-condition-review.md)
+- [boundary-condition-review.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phases/phase2_single_shot_diffusion/boundary-condition-review.md)
 
 ### 3.4 当前主算例输出
 
@@ -546,7 +546,8 @@ python .\run_phase3.py `
 2. [phase3_stack_thermal.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/phase3_stack_thermal.py)
 3. [phase2_diffusion.py](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/src/laser_doping_sim/phase2_diffusion.py)
 4. [formula-reference-register.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/formula-reference-register.md)
-5. [boundary-condition-review.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/boundary-condition-review.md)
+5. [boundary-condition-review.md](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/docs/phases/phase2_single_shot_diffusion/boundary-condition-review.md)
 6. [requirements.txt](C:/Users/User/Desktop/Codex/Diffusion%20Simulation/requirements.txt)
 
 这 6 个文件加上 `outputs/phase3/p90w_mainstream_default_source/`，已经足够让别人照着复现当前项目的主算例。
+

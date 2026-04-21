@@ -1,6 +1,33 @@
-# Laser Silicon Doping Simulation
+﻿# Laser Silicon Doping Simulation
 
 This workspace now includes the Phase 1 thermal model, the corrected Phase 2/3 phosphorus diffusion model, and the Phase 4 multi-shot workflow for laser-induced silicon doping.
+
+## Mainline Phase Map
+
+The current `main` workspace can be read in five stages:
+
+- `Phase 0`
+  measured input preparation and electrical calibration inputs
+- `Phase 1`
+  single-layer Si thermal baseline
+- `Phase 2`
+  single-shot phosphorus diffusion on top of the thermal history
+- `Phase 3`
+  `PSG/Si` single-shot mainline with measured-profile calibration
+- `Phase 4`
+  multi-shot thermal-history and multi-shot electrical extension
+
+The best short map of the current workspace is:
+
+- `docs/mainline-phase-map.md`
+
+The workspace now also has visible phase folders under `docs/` for navigation:
+
+- `docs/phases/phase0_data_and_calibration/`
+- `docs/phases/phase1_single_layer_thermal/`
+- `docs/phases/phase2_single_shot_diffusion/`
+- `docs/phases/phase3_psg_si_single_shot_mainline/`
+- `docs/phases/phase4_multishot_mainline/`
 
 ## What is implemented
 
@@ -50,23 +77,24 @@ Documentation lives in:
 - `docs/project_model_walkthrough_zh.md`
 - `docs/project_model_walkthrough_en.md`
 - `docs/current-model-summary.md`
+- `docs/mainline-phase-map.md`
 - `docs/archive/README.md`
 - `docs/physics_user_quickstart_zh.md`
 - `docs/physics_user_quickstart_en.md`
 - `docs/physics_parameter_manual_zh.md`
 - `docs/physics_parameter_manual_en.md`
 - `docs/workspace-file-classification.md`
-- `docs/phase1-code-explained.md`
-- `docs/phase1-analysis.md`
-- `docs/phase2-code-explained.md`
-- `docs/phase2-analysis.md`
-- `docs/phase3-code-explained.md`
-- `docs/phase3-analysis.md`
-- `docs/phase4-multishot-v1-summary.md`
-- `docs/phase4-thermal-history-v2-summary.md`
-- `docs/dual-channel-activation-method.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-code-explained.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-analysis.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-code-explained.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-code-explained.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md`
+- `docs/phases/phase4_multishot_mainline/phase4-multishot-v1-summary.md`
+- `docs/phases/phase4_multishot_mainline/phase4-thermal-history-v2-summary.md`
+- `docs/phases/phase0_data_and_calibration/dual-channel-activation-method.md`
 - `docs/formula-reference-register.md`
-- `docs/reproducible-paper-report-90w.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/reproducible-paper-report-90w.md`
 
 Raw measured inputs and cached references now live in:
 
@@ -118,6 +146,7 @@ python .\run_phase4_multishot.py `
 
 ## Documentation map
 
+- Use `docs/mainline-phase-map.md` if you want the fastest phase-by-phase map of the current `main` workspace.
 - Use `docs/project_model_walkthrough_zh.md` or `docs/project_model_walkthrough_en.md` as the main technical walkthrough.
 - Use `docs/physics_user_quickstart_zh.md` or `docs/physics_user_quickstart_en.md` for practical run order and output-reading guidance.
 - Use `docs/physics_parameter_manual_zh.md` or `docs/physics_parameter_manual_en.md` when changing physics or command-line parameters.
@@ -161,3 +190,4 @@ The current mainline now supports both single-shot and multi-shot studies. The n
 - tighter multi-shot calibration against measured activation / `Rsh`
 - deciding when `reuse_single_pulse` is sufficient and when `accumulate` is required
 - later optical and moving-interface refinements on top of the stabilized Phase 3 / Phase 4 baseline
+

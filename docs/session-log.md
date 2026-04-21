@@ -1,4 +1,4 @@
-# 会话记录
+﻿# 会话记录
 
 ## 2026-04-07
 
@@ -98,8 +98,8 @@
 
 本阶段已经补充以下说明文档：
 
-- `docs/phase1-code-explained.md`
-- `docs/phase1-analysis.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-code-explained.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-analysis.md`
 
 ### Phase 2 当前状态
 
@@ -131,8 +131,8 @@
 
 本阶段已补充：
 
-- `docs/phase2-code-explained.md`
-- `docs/phase2-analysis.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-code-explained.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-analysis.md`
 
 ### 下一次续做入口
 
@@ -140,10 +140,10 @@
 
 - `docs/modeling-roadmap.md`
 - `docs/session-log.md`
-- `docs/phase1-code-explained.md`
-- `docs/phase1-analysis.md`
-- `docs/phase2-code-explained.md`
-- `docs/phase2-analysis.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-code-explained.md`
+- `docs/phases/phase1_single_layer_thermal/phase1-analysis.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-code-explained.md`
+- `docs/phases/phase2_single_shot_diffusion/phase2-analysis.md`
 
 之后直接进入：
 
@@ -223,7 +223,7 @@
 
 在等待文书老哥补齐缺失公式期间，先做了一轮“当前结果 vs 论文量级”的对照，整理在：
 
-- `docs/literature-gap-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/literature-gap-analysis.md`
 
 当前最重要的对照结论是：
 
@@ -242,9 +242,9 @@ Phase 3 第一轮已经完成，新增：
 
 - `src/laser_doping_sim/phase3_stack_thermal.py`
 - `run_phase3.py`
-- `docs/phase3-analysis.md`
-- `docs/phase3-code-explained.md`
-- `docs/phase3-work-report.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-code-explained.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-work-report.md`
 - `docs/stage-report-template.md`
 
 当前默认 Phase 3 结果：
@@ -278,7 +278,7 @@ Phase 3 第一轮已经完成，新增：
 3. 新增自动标定脚本：
    - `run_dual_channel_activation_calibration.py`
 4. 新增方法说明文档：
-   - `docs/dual-channel-activation-method.md`
+   - `docs/phases/phase0_data_and_calibration/dual-channel-activation-method.md`
 
 ### 当前双通道闭合
 
@@ -347,7 +347,7 @@ Phase 3 第一轮已经完成，新增：
 
 针对 `interfacial_transport_length_m` 又做了一轮专门的界面文献复核，并新增：
 
-- `docs/interface-model-literature-notes.md`
+- `docs/phases/phase2_single_shot_diffusion/interface-model-literature-notes.md`
 
 这轮复核后的当前结论是：
 
@@ -628,7 +628,7 @@ Phase 3 第一轮已经完成，新增：
 
 本轮专门复核了 `PSG -> Si` 表面边界条件的文献口径，并形成了单独报告：
 
-- `docs/boundary-condition-review.md`
+- `docs/phases/phase2_single_shot_diffusion/boundary-condition-review.md`
 
 当前判断：
 
@@ -879,8 +879,8 @@ Phase 3 第一轮已经完成，新增：
 
 本轮相关文档：
 
-- `docs/phase3-analysis.md`
-- `docs/phase3-work-report.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-analysis.md`
+- `docs/phases/phase3_psg_si_single_shot_mainline/phase3-work-report.md`
 - `docs/formula-reference-register.md`
 - `docs/literature-usage-register.md`
 
@@ -1221,7 +1221,7 @@ Phase 3 第一轮已经完成，新增：
 
 新增文档：
 
-- `docs/laser-activation-literature-notes.md`
+- `docs/phases/phase0_data_and_calibration/laser-activation-literature-notes.md`
 
 本轮把与下列问题最相关的原始文献单独收拢：
 
@@ -1500,7 +1500,7 @@ What we added:
 
 - `src/laser_doping_sim/phase4_multishot.py`
 - `run_phase4_multishot.py`
-- `docs/phase4-multishot-v1-summary.md`
+- `docs/phases/phase4_multishot_mainline/phase4-multishot-v1-summary.md`
 
 Supporting kernel upgrade:
 
@@ -1654,7 +1654,7 @@ What we added:
 - `run_phase4_multishot.py`
   - new `--thermal-history-mode`
   - new `--cycle-end-ns`
-- `docs/phase4-thermal-history-v2-summary.md`
+- `docs/phases/phase4_multishot_mainline/phase4-thermal-history-v2-summary.md`
 
 What it does:
 
@@ -1830,3 +1830,4 @@ Current documentation rule:
 
 - active entry points live in the main `docs/` directory
 - superseded but historically useful documents move under `docs/archive/`
+
